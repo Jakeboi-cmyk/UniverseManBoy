@@ -1,0 +1,1917 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Milo Monster — Multiplayer</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#090b12;color:#eee;font-family:Arial,sans-serif;display:flex;justify-content:center}
+#wrap{width:min(100%,1100px);padding:14px;position:relative}
+h1{margin:0 0 8px;font-size:26px}
+#bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:#151a25;border:1px solid #2b3445;border-radius:10px;padding:8px 12px;margin-bottom:8px}
+#gameWrap{position:relative;width:100%}
+canvas{width:100%;height:auto;background:#101722;border:2px solid #303a4c;border-radius:10px;display:block;cursor:crosshair}
+#hud{position:absolute;left:12px;top:12px;right:12px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;z-index:5;gap:8px;flex-wrap:wrap}
+#hudStats{display:block;visibility:visible;min-width:280px;background:rgba(10,14,22,0.88);border:1px solid #3a4a66;border-radius:8px;padding:8px 12px;font-size:13px;line-height:1.45;max-width:72%;color:#fff}
+#hudBtns{display:flex;gap:8px;pointer-events:auto}
+#hudBtns button{font-size:13px;padding:8px 14px}
+button{background:#222b3b;color:#fff;border:1px solid #46546c;border-radius:7px;padding:8px 11px;cursor:pointer}
+button:hover{background:#303b50}button:disabled{opacity:0.45;cursor:not-allowed}
+.small{font-size:12px;color:#aeb8c9;margin-top:8px}
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a2233;border:1px solid #3a4a66;padding:10px 18px;border-radius:8px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:30;font-size:14px}
+#shopOverlay{display:none;position:absolute;inset:0;background:rgba(0,0,0,0.65);z-index:20;border-radius:10px;align-items:center;justify-content:center}
+#shopOverlay.open{display:flex}
+#shopPanel{background:#151a25;border:1px solid #3a4a66;border-radius:12px;padding:18px 20px;width:min(520px,92%);max-height:85%;overflow:auto;box-shadow:0 12px 40px rgba(0,0,0,0.5)}
+#shopPanel h2{margin:0 0 6px;font-size:20px}
+#shopPanel .sub{font-size:12px;color:#aeb8c9;margin-bottom:12px}
+#shopItems{display:flex;flex-direction:column;gap:8px}
+#shopItems button{text-align:left;font-size:14px;padding:10px 12px;width:100%}
+#shopClose{margin-top:14px;width:100%;background:#3a2a55}
+#pausedBanner{display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(20,16,40,0.9);border:1px solid #6a4a9a;padding:14px 28px;border-radius:10px;font-size:22px;font-weight:bold;z-index:15;pointer-events:none}
+#pausedBanner.show{display:block}
+#modOverlay{display:none;position:absolute;inset:0;background:rgba(0,0,0,0.7);z-index:25;border-radius:10px;align-items:center;justify-content:center}
+#modOverlay.open{display:flex}
+#modPanel{background:#1a1228;border:1px solid #6a3a9a;border-radius:12px;padding:18px 20px;width:min(480px,92%);max-height:90%;overflow:auto;box-shadow:0 12px 40px rgba(0,0,0,0.6)}
+#modPanel h2{margin:0 0 8px;font-size:20px;color:#d0a0ff}
+#modPanel .sub{font-size:12px;color:#aeb8c9;margin-bottom:12px}
+#modItems{display:none;flex-direction:column;gap:8px}
+#modItems.open{display:flex}
+#modItems button{text-align:left;font-size:14px;padding:10px 12px;width:100%;background:#2a1a40;border-color:#6a4a8a}
+#modItems button:hover{background:#3a2a55}
+#modClose{margin-top:12px;width:100%;background:#4a2a6a}
+#codeBox{display:flex;gap:8px;margin-bottom:12px}
+#codeInput{flex:1;padding:8px 10px;border-radius:7px;border:1px solid #46546c;background:#0e1420;color:#eee;font-size:14px}
+#codeSubmit{padding:8px 14px}
+#menuOverlay{position:absolute;inset:0;z-index:40;background:radial-gradient(ellipse at 50% 30%,#1a1030 0%,#090b12 70%);border-radius:10px;display:flex;align-items:center;justify-content:center}
+#menuOverlay.hidden{display:none}
+#menuPanel{text-align:center;width:min(420px,90%);padding:28px 24px}
+#menuPanel h1{font-size:36px;margin:0 0 6px;background:linear-gradient(90deg,#f1c84b,#ff6b8a,#9b5cff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+#menuPanel .tagline{color:#aeb8c9;font-size:13px;margin-bottom:22px}
+#menuPanel .menuBtns{display:flex;flex-direction:column;gap:10px}
+#menuPanel .menuBtns button{font-size:16px;padding:12px 16px;width:100%}
+#menuPanel .menuBtns button.primary{background:#3a2a70;border-color:#7a5ab0}
+#menuPanel .menuBtns button.primary:hover{background:#4a3a85}
+#menuSub{display:none;margin-top:8px}
+#menuSub.open{display:block}
+#menuSub input{width:100%;padding:10px 12px;margin:8px 0;border-radius:7px;border:1px solid #46546c;background:#0e1420;color:#eee;font-size:16px;text-align:center;letter-spacing:3px;text-transform:uppercase}
+#menuStatus{margin-top:12px;font-size:13px;color:#9b5cff;min-height:20px}
+#customPanel{display:none;margin-top:8px;text-align:left}
+#customPanel.open{display:block}
+.customTitle{text-align:center;font-size:22px;color:#d0a0ff;margin-bottom:16px;font-weight:700}
+.customLabel{display:block;font-size:11px;color:#9da9bc;margin:10px 0 5px;letter-spacing:1px}
+#customPanel input[type=text],#customPanel input:not([type]){width:100%;box-sizing:border-box;padding:10px 12px;border-radius:7px;border:1px solid #46546c;background:#0e1420;color:#eee;font-size:16px}
+#customColor{width:100%;height:48px;padding:3px;border-radius:7px;border:1px solid #46546c;background:#0e1420;cursor:pointer}
+#customPreview{text-align:center;font-size:22px;font-weight:700;margin:18px 0;padding:12px;border:1px solid #303b50;border-radius:8px;background:#0e1420}
+#roomBadge{display:none;position:absolute;top:10px;left:50%;transform:translateX(-50%);background:rgba(20,16,40,0.9);border:1px solid #6a4a9a;padding:6px 14px;border-radius:8px;font-size:12px;z-index:6;pointer-events:none}
+#roomBadge.show{display:block}
+</style>
+</head>
+<body><div id="wrap">
+<h1 id="title">🟢 Charlie MONSTER</h1>
+<div id="bar">
+  <span class="small" id="controls">WASD · SPACE roar · E heal · F slash · R minions · Q hyper beam · Shop · M mods</span>
+  <button id="restart">Restart</button>
+  <button id="menuBtn">🏠 Menu</button>
+</div>
+<div id="gameWrap">
+  <canvas id="game" width="1100" height="650"></canvas>
+  <div id="roomBadge"></div>
+  <div id="menuOverlay">
+    <div id="menuPanel">
+      <h1>Charlie MONSTER</h1>
+      <div class="tagline">Solo or online co-op · Up to 4 players · Create a room & share the code</div>
+      <div class="menuBtns" id="menuMain">
+        <button class="primary" id="btnSolo">▶ Play Solo</button>
+        <button id="btnCreate">🌐 Create Room</button>
+        <button id="btnJoin">🔗 Join Room</button>
+        <button id="btnCustomize">🎨 CUSTOMIZE</button>
+      </div>
+      <div id="customPanel">
+        <div class="customTitle">🎨 CUSTOMIZE</div>
+        <label class="customLabel">NAME</label>
+        <input id="customName" maxlength="16" placeholder="Your name" autocomplete="off">
+        <label class="customLabel">COLOR</label>
+        <input id="customColor" type="color" value="#f1c84b">
+        <div id="customPreview">Charlie</div>
+        <div style="display:flex;gap:8px">
+          <button id="btnCustomSave" class="primary" style="flex:1">Save</button>
+          <button id="btnCustomBack" style="flex:1">Back</button>
+        </div>
+      </div>
+      <div id="menuSub">
+        <div id="menuSubTitle" style="font-size:14px;color:#c9a0ff;margin-bottom:4px"></div>
+        <input id="roomInput" maxlength="6" placeholder="ROOM CODE" autocomplete="off">
+        <div style="display:flex;gap:8px">
+          <button id="btnRoomGo" class="primary" style="flex:1">Go</button>
+          <button id="btnRoomBack" style="flex:1">Back</button>
+        </div>
+      </div>
+      <div id="menuStatus"></div>
+    </div>
+  </div>
+  <div id="hud">
+    <div id="hudStats"></div>
+    <div id="hudBtns">
+      <button id="shopBtn">🛒 Shop</button>
+      <button id="modBtn" style="display:none">🔧 Mods</button>
+    </div>
+  </div>
+  <div id="pausedBanner">PAUSED</div>
+  <div id="shopOverlay">
+    <div id="shopPanel">
+      <h2>🛒 Shop</h2>
+      <div class="sub" id="shopSub">Spend coins. Game paused.</div>
+      <div id="shopItems"></div>
+      <button id="shopClose">Close Shop</button>
+    </div>
+  </div>
+  <div id="modOverlay">
+    <div id="modPanel">
+      <h2>🔧 Mod Panel</h2>
+      <div class="sub" id="modSub">Enter code to unlock. Game pauses while open.</div>
+      <div id="codeBox">
+        <input id="codeInput" type="password" maxlength="8" placeholder="Enter code…" autocomplete="off">
+        <button id="codeSubmit">Unlock</button>
+      </div>
+      <div id="modItems"></div>
+      <button id="modClose">Close</button>
+    </div>
+  </div>
+</div>
+<div class="small" id="hint">Main → MILO → JAKE → HYPER. Secret shrine in JAKE UNIVERSE (1000 coins) unlocks Necro Revive.</div>
+</div>
+<div id="toast"></div>
+<script>
+const c=document.getElementById('game'),ctx=c.getContext('2d');
+const VIEW_W=c.width, VIEW_H=c.height;
+
+// —— Server multiplayer —————————————————————————————
+// WebSocket multiplayer. server.js handles rooms/routing; the host browser remains authoritative.
+const MAX_PLAYERS=4;
+const MP_COLORS=['#f1c84b','#7ec8ff','#ff7eb9','#7effa0','#c58cff','#ff9b5b'];
+let gameMode='menu'; // menu | solo | host | client
+let socket=null, roomCode='', isHost=false, mpReady=false;
+let myClientId=0;
+let mpPlayers=new Map(); // host only: id -> {id,conn,input,entity,profile,cooldowns}
+let mpOthers=[];
+let netSendTimer=0, netStateTimer=0;
+let inputSeq=0;
+let lastAckedInput=0;
+let clientInputHistory=[];
+let clientPacketDt=0;
+let actionSeq=0;
+let pendingClientActions=[];
+let localRenderNetError=0;
+let remoteRenderClock=0;
+let clientLastState=0;
+
+const playerProfile={
+  name:(localStorage.getItem('miloMonsterName')||'Charlie').slice(0,16),
+  color:localStorage.getItem('miloMonsterColor')||MP_COLORS[0]
+};
+function cleanName(v){
+  v=String(v||'Charlie').replace(/[<>]/g,'').trim().slice(0,16);
+  return v||'Charlie';
+}
+function saveProfile(){
+  playerProfile.name=cleanName(document.getElementById('customName').value);
+  playerProfile.color=document.getElementById('customColor').value||MP_COLORS[0];
+  localStorage.setItem('miloMonsterName',playerProfile.name);
+  localStorage.setItem('miloMonsterColor',playerProfile.color);
+  document.getElementById('customName').value=playerProfile.name;
+  document.getElementById('customColor').value=playerProfile.color;
+  document.getElementById('customPreview').textContent=playerProfile.name;
+  document.getElementById('customPreview').style.color=playerProfile.color;
+  setMenuStatus('Customization saved!');
+}
+function loadProfileUI(){
+  document.getElementById('customName').value=playerProfile.name;
+  document.getElementById('customColor').value=playerProfile.color;
+  document.getElementById('customPreview').textContent=playerProfile.name;
+  document.getElementById('customPreview').style.color=playerProfile.color;
+}
+function setMenuStatus(msg){ document.getElementById('menuStatus').textContent=msg||''; }
+function lobbyCount(){ return 1+mpPlayers.size; }
+function sendSocket(msg){
+  if(socket && socket.readyState===WebSocket.OPEN){ try{socket.send(JSON.stringify(msg));return true;}catch(e){} }
+  return false;
+}
+function closeSocket(){
+  const s=socket;
+  socket=null;
+  if(s){try{s.close();}catch(e){}}
+}
+function clearMultiplayer(){
+  mpPlayers.clear();
+  mpOthers=[];
+  closeSocket();
+  roomCode=''; myClientId=0; isHost=false; mpReady=false;
+  pendingClientActions=[];
+  clientInputHistory=[]; lastAckedInput=0; clientPacketDt=0;
+  localRenderNetError=0;
+  remoteRenderClock=0;
+}
+function showMenu(){
+  if(gameMode==='host'||gameMode==='client'||socket) clearMultiplayer();
+  gameMode='menu';
+  document.getElementById('menuOverlay').classList.remove('hidden');
+  document.getElementById('menuMain').style.display='flex';
+  document.getElementById('menuSub').classList.remove('open');
+  document.getElementById('customPanel').classList.remove('open');
+  document.getElementById('roomBadge').classList.remove('show');
+  setMenuStatus('');
+  loadProfileUI();
+}
+function hideMenu(){document.getElementById('menuOverlay').classList.add('hidden');}
+function updateRoomBadge(){
+  const b=document.getElementById('roomBadge');
+  if(gameMode==='host'){b.classList.add('show');b.textContent=`HOST · ${roomCode} · ${lobbyCount()}/${MAX_PLAYERS}`;}
+  else if(gameMode==='client'){b.classList.add('show');b.textContent=`ROOM ${roomCode} · P${myClientId+1}`;}
+  else b.classList.remove('show');
+}
+function broadcast(msg){
+  sendSocket(msg);
+}
+function nextSlot(){for(let i=1;i<MAX_PLAYERS;i++)if(!mpPlayers.has(i))return i;return -1;}
+function makeNetEntity(slot,profile){
+  return {x:180+slot*55,y:WORLD_H/2,r:19,hp:60,maxHp:60,shield:0,speed:240,name:cleanName(profile?.name||`Player ${slot+1}`),color:profile?.color||MP_COLORS[slot%MP_COLORS.length],slot,
+    roarPower:78,roarRangeBonus:0,slashUnlocked:false,slashPower:1,slashRangeBonus:0,
+    minionUnlocked:false,minionCount:2,minionDmg:40,hyperUnlocked:false,hyperPower:1,lifeSteal:0.05,
+    critChance:0.12,dmgReduce:0,magnetRange:0};
+}
+function profileMessage(){return {name:cleanName(playerProfile.name),color:playerProfile.color};}
+function connectSocket(){
+  closeSocket();
+  const proto=location.protocol==='https:'?'wss':'ws';
+  const url=`${proto}://${location.host}`;
+  try{socket=new WebSocket(url);}catch(e){setMenuStatus('Could not connect to the server.');return null;}
+  socket.addEventListener('open',()=>{});
+  socket.addEventListener('message',e=>{
+    let data;try{data=JSON.parse(e.data);}catch(_){return;}
+    handleServerMessage(data);
+  });
+  socket.addEventListener('error',()=>setMenuStatus('Network error. Make sure server.js is running.'));
+  socket.addEventListener('close',()=>{
+    if(gameMode==='client'||gameMode==='host'){
+      const wasPlaying=mpReady;
+      socket=null;
+      if(wasPlaying) toast('Disconnected from server');
+      clearMultiplayer();
+      if(wasPlaying) showMenu();
+    }
+  });
+  return socket;
+}
+function createRoom(){
+  clearMultiplayer();
+  isHost=true; gameMode='menu';
+  const s=connectSocket();
+  if(!s)return;
+  s.addEventListener('open',function onOpen(){
+    s.removeEventListener('open',onOpen);
+    sendSocket({t:'createRoom',profile:profileMessage()});
+    setMenuStatus('Creating room…');
+  });
+}
+function refreshLobby(){
+  const n=lobbyCount();
+  setMenuStatus(`Room ${roomCode} · ${n}/${MAX_PLAYERS} players${n>1?' · Ready to start!':' · Waiting for players…'}`);
+  document.getElementById('btnRoomGo').textContent=`▶ START GAME (${n})`;
+  updateRoomBadge();
+}
+function joinRoom(code){
+  code=String(code||'').trim().toUpperCase();
+  if(code.length<4){setMenuStatus('Enter a valid room code.');return;}
+  clearMultiplayer(); roomCode=code; gameMode='menu'; isHost=false;
+  const s=connectSocket();
+  if(!s)return;
+  s.addEventListener('open',function onOpen(){
+    s.removeEventListener('open',onOpen);
+    sendSocket({t:'joinRoom',room:roomCode,profile:profileMessage()});
+    setMenuStatus('Connecting to room…');
+  });
+  document.getElementById('menuMain').style.display='none';
+  document.getElementById('menuSub').classList.add('open');
+  document.getElementById('menuSubTitle').textContent='Connecting to room…';
+  document.getElementById('roomInput').value=code;
+  document.getElementById('roomInput').readOnly=true;
+  document.getElementById('btnRoomGo').textContent='WAITING…';
+  document.getElementById('btnRoomGo').disabled=true;
+  updateRoomBadge();
+}
+function startHostGame(){
+  hideMenu(); reset();
+  gameMode='host'; isHost=true; mpReady=true; myClientId=0;
+  player.name=playerProfile.name;player.color=playerProfile.color;player.slot=0;
+  for(const p of mpPlayers.values()){
+    p.entity=makeNetEntity(p.id,p.profile);
+    p.entity.maxHp=player.maxHp;p.entity.hp=player.maxHp;p.entity.speed=player.speed;
+    p.input={mx:0,my:0};
+    p.cooldowns={roar:0,slash:0,heal:0,summon:0,beam:0};
+    p.actionQueue=[];
+    p.lastInputSeq=0;
+    syncRemoteSharedStats(p.entity);
+  }
+  sendSocket({t:'startGame',world:currentWorld});
+  updateRoomBadge();toast(`Online game started · ${lobbyCount()} players`);
+  broadcastState(true);
+}
+function startClientGame(id){
+  hideMenu(); reset();
+  gameMode='client';isHost=false;mpReady=true;myClientId=id;
+  player.name=playerProfile.name;player.color=playerProfile.color;player.slot=id;
+  const hs=document.getElementById('hudStats');
+  hs.style.display='block'; hs.style.visibility='visible';
+  hs.innerHTML=`<b>🟢 MAIN · CO-OP P${id+1}</b><br>HP ${Math.ceil(player.hp)}/${player.maxHp} &nbsp; 🛡 0 &nbsp; 🪙 0<br>☠ 0 &nbsp; 📢 READY &nbsp; 💪78`;
+  updateRoomBadge();updateUI();toast(`Joined room · ${player.name}`);
+}
+function handleServerMessage(data){
+  if(!data||!data.t)return;
+  if(data.t==='created'){
+    roomCode=data.room;myClientId=0;isHost=true;gameMode='menu';
+    document.getElementById('menuMain').style.display='none';
+    document.getElementById('menuSub').classList.add('open');
+    document.getElementById('menuSubTitle').textContent='Share this room code with your friends:';
+    document.getElementById('roomInput').value=roomCode;
+    document.getElementById('roomInput').readOnly=true;
+    document.getElementById('btnRoomGo').textContent='▶ START GAME';
+    document.getElementById('btnRoomGo').disabled=false;
+    setMenuStatus(`Room ${roomCode} · Waiting for players…`);
+    updateRoomBadge();
+    return;
+  }
+  if(data.t==='error'){
+    setMenuStatus(data.message||'Server error.');
+    if(data.code==='ROOM_NOT_FOUND'||data.code==='ROOM_FULL'||data.code==='ROOM_STARTED'){
+      try{socket?.close();}catch(e){}
+      socket=null;isHost=false;gameMode='menu';
+      document.getElementById('menuMain').style.display='flex';
+      document.getElementById('menuSub').classList.remove('open');
+      updateRoomBadge();
+    }
+    return;
+  }
+  if(data.t==='playerJoined'&&isHost){
+    const id=Number(data.player?.id);
+    if(Number.isInteger(id)){
+      const profile={name:cleanName(data.player.name),color:data.player.color||MP_COLORS[id%MP_COLORS.length]};
+      mpPlayers.set(id,{id,profile,conn:socket,input:{mx:0,my:0},entity:null,cooldowns:{roar:0,slash:0,heal:0,summon:0,beam:0},actionQueue:[]});
+      refreshLobby();
+    }
+    return;
+  }
+  if(data.t==='playerLeft'&&isHost){
+    const id=Number(data.id);const p=mpPlayers.get(id);const name=p?.profile?.name||`Player ${id+1}`;
+    mpPlayers.delete(id);if(mpReady)toast(`${name} left the game`);refreshLobby();return;
+  }
+  if(data.t==='input'&&isHost){
+    const p=mpPlayers.get(Number(data.id));
+    if(!p)return;
+    p.input={...(p.input||{}),mx:Number(data.mx)||0,my:Number(data.my)||0,seq:Number(data.seq)||0};
+    p.lastInputSeq=Number(data.seq)||p.lastInputSeq||0;
+    if(!Array.isArray(p.actionQueue)) p.actionQueue=[];
+    if(Array.isArray(data.actions)){
+      for(const a of data.actions){
+        const type=String(a?.type||'');
+        if(['roar','slash','heal','summon','beam'].includes(type)) p.actionQueue.push({id:Number(a.id)||0,type});
+      }
+    }else{
+      // Backward compatibility with older clients.
+      for(const k of ['roar','slash','heal','summon','beam']) if(data[k]) p.actionQueue.push({id:0,type:k});
+    }
+    if(p.actionQueue.length>24) p.actionQueue=p.actionQueue.slice(-24);
+    return;
+  }
+  if(data.t==='profile'&&isHost){
+    const p=mpPlayers.get(Number(data.id));
+    if(p){p.profile={name:cleanName(data.name),color:data.color||p.profile.color};if(p.entity){p.entity.name=p.profile.name;p.entity.color=p.profile.color;}refreshLobby();}
+    return;
+  }
+  if(data.t==='welcome'){
+    myClientId=Number(data.id)||0;roomCode=data.room||roomCode;gameMode='menu';
+    document.getElementById('btnRoomGo').textContent='WAITING…';document.getElementById('btnRoomGo').disabled=true;
+    document.getElementById('menuSubTitle').textContent=`Connected to room ${roomCode}`;
+    setMenuStatus(`You are ${playerProfile.name} · waiting for host to start…`);updateRoomBadge();
+    return;
+  }
+  if(data.t==='lobby'&&!isHost){
+    setMenuStatus(`Room ${roomCode} · ${data.count}/${MAX_PLAYERS} players · waiting for host…`);return;
+  }
+  if(data.t==='start'&&!isHost){startClientGame(myClientId);return;}
+  if(data.t==='state'&&gameMode==='client'){applyNetState(data.s);return;}
+}
+function clientInput(dt){
+  if(!socket || socket.readyState!==WebSocket.OPEN)return;
+  clientPacketDt+=dt;
+  netSendTimer-=dt;if(netSendTimer>0)return;netSendTimer=0.016;
+  const mx=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0);
+  const my=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0);
+  const seq=++inputSeq;
+  const packetDt=Math.max(0.008,Math.min(0.05,clientPacketDt));
+  clientPacketDt=0;
+  clientInputHistory.push({seq,mx,my,dt:packetDt});
+  if(clientInputHistory.length>120) clientInputHistory.splice(0,clientInputHistory.length-120);
+  const actions=pendingClientActions.splice(0);
+  const msg={t:'input',seq,mx,my,actions};
+  try{socket.send(JSON.stringify(msg));}catch(e){}
+}
+function packNetState(){
+  const players=[{id:0,x:player.x,y:player.y,r:player.r,hp:player.hp,maxHp:player.maxHp,shield:player.shield,name:player.name,color:player.color,
+    ack:inputSeq,cd:{roar:cooldown,slash:slashCd,heal:healCd,summon:minionCd,beam:hyperCd},
+    abilities:{slash:slashUnlocked,minion:minionUnlocked,hyper:hyperUnlocked}}];
+  for(const p of mpPlayers.values())if(p.entity)players.push({id:p.id,x:p.entity.x,y:p.entity.y,r:p.entity.r,hp:p.entity.hp,maxHp:p.entity.maxHp,shield:p.entity.shield,name:p.entity.name,color:p.entity.color,ack:p.lastInputSeq||0,
+    cd:{roar:p.cooldowns.roar||0,slash:p.cooldowns.slash||0,heal:p.cooldowns.heal||0,summon:p.cooldowns.summon||0,beam:p.cooldowns.beam||0},
+    abilities:{slash:!!p.entity.slashUnlocked,minion:!!p.entity.minionUnlocked,hyper:!!p.entity.hyperUnlocked}});
+  return {players,coins,kills,world:currentWorld,enemies:enemies.slice(0,45).map(e=>({x:e.x,y:e.y,r:e.r,hp:e.hp,maxHp:e.maxHp,type:e.type})),bosses:bosses.map(b=>({x:b.x,y:b.y,r:b.r,hp:b.hp,maxHp:b.maxHp,type:b.type,name:b.name,rage:!!b.rage,phase:b.phase||1})),minions:minions.slice(0,24).map(m=>({x:m.x,y:m.y,r:m.r,necro:!!m.necro,name:m.name||null}))};
+}
+function broadcastState(force=false){
+  if(!isHost)return;if(!force&&netStateTimer>0)return;netStateTimer=0.020;broadcast({t:'state',s:packNetState()});
+}
+function applyNetState(s){
+  if(!s)return;
+  const local=(s.players||[]).find(p=>p.id===myClientId);
+  if(local){
+    const dx=local.x-player.x,dy=local.y-player.y;
+    const err=Math.hypot(dx,dy);
+    const ack=Number(local.ack)||0;
+    // Only reconcile when a newer input has actually been acknowledged.
+    // Replay still-unacknowledged inputs so local movement stays smooth.
+    if(ack>lastAckedInput){
+      player.x=local.x; player.y=local.y;
+      clientInputHistory=clientInputHistory.filter(h=>h.seq>ack);
+      for(const h of clientInputHistory){
+        if(h.mx||h.my){
+          const l=Math.hypot(h.mx,h.my)||1;
+          moveEntity(player,h.mx/l*(player.speed||240)*h.dt,h.my/l*(player.speed||240)*h.dt);
+        }
+      }
+      // Include the tiny unsent movement interval after the last packet.
+      if(clientPacketDt>0){
+        const mx=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0);
+        const my=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0);
+        if(mx||my){const l=Math.hypot(mx,my)||1;moveEntity(player,mx/l*(player.speed||240)*clientPacketDt,my/l*(player.speed||240)*clientPacketDt);}
+      }
+      lastAckedInput=ack;
+      localRenderNetError=err;
+    }else if(err>120){
+      player.x=local.x; player.y=local.y; localRenderNetError=err;
+    }else{
+      localRenderNetError=err;
+    }
+    player.hp=local.hp;player.maxHp=local.maxHp||player.maxHp;player.shield=local.shield||0;
+    player.name=local.name||playerProfile.name;player.color=local.color||playerProfile.color;
+    const cd=local.cd||{};
+    cooldown=Number(cd.roar)||0; slashCd=Number(cd.slash)||0; healCd=Number(cd.heal)||0; minionCd=Number(cd.summon)||0; hyperCd=Number(cd.beam)||0;
+    const ab=local.abilities||{}; slashUnlocked=!!ab.slash; minionUnlocked=!!ab.minion; hyperUnlocked=!!ab.hyper;
+  }
+  const oldOthers=new Map((mpOthers||[]).map(o=>[o.id,o]));
+  mpOthers=(s.players||[]).filter(p=>p.id!==myClientId).map(p=>{
+    const old=oldOthers.get(p.id);
+    return {...p,r:p.r||19,speed:240,slot:p.id,renderX:old?.renderX??p.x,renderY:old?.renderY??p.y};
+  });
+  coins=s.coins??coins;kills=s.kills??kills;
+  if(s.world&&s.world!==currentWorld&&WORLDS[s.world]){currentWorld=s.world;WORLD_W=WORLDS[currentWorld].w;WORLD_H=WORLDS[currentWorld].h;}
+  enemies=(s.enemies||[]).map(e=>({...e,speed:0,dmg:0}));
+  bosses=(s.bosses||[]).map(b=>({...b,speed:0}));
+  minions=(s.minions||[]).map(m=>({...m,hp:50,maxHp:50,speed:0,life:99,dmg:0,pulse:0}));
+  clientLastState=performance.now();
+}
+function syncRemoteSharedStats(entity){
+  if(!entity) return;
+  entity.speed=player.speed;
+  entity.maxHp=player.maxHp;
+  entity.roarPower=roarPower;
+  entity.roarRangeBonus=roarRangeBonus;
+  entity.slashUnlocked=slashUnlocked;
+  entity.slashPower=slashPower;
+  entity.slashRangeBonus=slashRangeBonus;
+  entity.minionUnlocked=minionUnlocked;
+  entity.minionCount=minionCount;
+  entity.minionDmg=minionDmg;
+  entity.hyperUnlocked=hyperUnlocked;
+  entity.hyperPower=hyperPower;
+  entity.lifeSteal=lifeSteal;
+  entity.critChance=critChance;
+  entity.dmgReduce=dmgReduce;
+  entity.magnetRange=magnetRange;
+}
+function runRemoteAction(entry,action){
+  const p=entry.entity;if(!p||p.hp<=0)return;
+  syncRemoteSharedStats(p);
+  const oldPlayer=player,oldMouseX=mouse.worldX,oldMouseY=mouse.worldY;
+  const oldCd={roar:cooldown,slash:slashCd,heal:healCd,minion:minionCd,hyper:hyperCd};
+  const oldCombat={critChance,lifeSteal,dmgReduce,magnetRange};
+  const oldAbility={slashUnlocked,minionUnlocked,hyperUnlocked,roarPower,roarRangeBonus,slashPower,slashRangeBonus,minionCount,minionDmg,hyperPower};
+  cooldown=entry.cooldowns.roar||0; slashCd=entry.cooldowns.slash||0; healCd=entry.cooldowns.heal||0; minionCd=entry.cooldowns.summon||0; hyperCd=entry.cooldowns.beam||0;
+  player=p;
+  slashUnlocked=!!p.slashUnlocked; minionUnlocked=!!p.minionUnlocked; hyperUnlocked=!!p.hyperUnlocked;
+  roarPower=p.roarPower||roarPower; roarRangeBonus=p.roarRangeBonus||0; slashPower=p.slashPower||1; slashRangeBonus=p.slashRangeBonus||0;
+  minionCount=p.minionCount||2; minionDmg=p.minionDmg||40; hyperPower=p.hyperPower||1;
+  critChance=p.critChance??critChance; lifeSteal=p.lifeSteal??lifeSteal; dmgReduce=p.dmgReduce??dmgReduce; magnetRange=p.magnetRange??magnetRange;
+  mouse.worldX=p.x+1; mouse.worldY=p.y;
+  try{
+    if(action==='roar') roar();
+    if(action==='slash') slash();
+    if(action==='heal') healAbility();
+    if(action==='summon') summonMinions();
+    if(action==='beam'){
+      let target=null,best=Infinity;
+      for(const e of enemies){const d=dist(p,e);if(d<best){best=d;target=e;}}
+      for(const b of bosses){const d=dist(p,b);if(d<best){best=d;target=b;}}
+      hyperBeam(target?.x ?? p.x+1,target?.y ?? p.y);
+    }
+  }finally{
+    entry.cooldowns.roar=cooldown; entry.cooldowns.slash=slashCd; entry.cooldowns.heal=healCd; entry.cooldowns.summon=minionCd; entry.cooldowns.beam=hyperCd;
+    p.roarPower=roarPower; p.roarRangeBonus=roarRangeBonus; p.slashPower=slashPower; p.slashRangeBonus=slashRangeBonus; p.minionCount=minionCount; p.minionDmg=minionDmg; p.hyperPower=hyperPower;
+    player=oldPlayer; mouse.worldX=oldMouseX; mouse.worldY=oldMouseY;
+    cooldown=oldCd.roar; slashCd=oldCd.slash; healCd=oldCd.heal; minionCd=oldCd.minion; hyperCd=oldCd.hyper;
+    critChance=oldCombat.critChance; lifeSteal=oldCombat.lifeSteal; dmgReduce=oldCombat.dmgReduce; magnetRange=oldCombat.magnetRange;
+    slashUnlocked=oldAbility.slashUnlocked; minionUnlocked=oldAbility.minionUnlocked; hyperUnlocked=oldAbility.hyperUnlocked;
+    roarPower=oldAbility.roarPower; roarRangeBonus=oldAbility.roarRangeBonus; slashPower=oldAbility.slashPower; slashRangeBonus=oldAbility.slashRangeBonus;
+    minionCount=oldAbility.minionCount; minionDmg=oldAbility.minionDmg; hyperPower=oldAbility.hyperPower;
+  }
+}
+function newMultiplayerTick(dt){
+  if(gameMode==='host'){
+    for(const p of mpPlayers.values()){
+      if(!p.entity)continue;
+      syncRemoteSharedStats(p.entity);
+      p.cooldowns.roar=Math.max(0,(p.cooldowns.roar||0)-dt);
+      p.cooldowns.slash=Math.max(0,(p.cooldowns.slash||0)-dt);
+      p.cooldowns.heal=Math.max(0,(p.cooldowns.heal||0)-dt);
+      p.cooldowns.summon=Math.max(0,(p.cooldowns.summon||0)-dt);
+      p.cooldowns.beam=Math.max(0,(p.cooldowns.beam||0)-dt);
+      const i=p.input||{}; const mx=i.mx||0,my=i.my||0;
+      if(mx||my){const l=Math.hypot(mx,my)||1;moveEntity(p.entity,mx/l*(p.entity.speed||240)*dt,my/l*(p.entity.speed||240)*dt);}
+      if(!Array.isArray(p.actionQueue)) p.actionQueue=[];
+      const actions=p.actionQueue.splice(0,6);
+      for(const a of actions) runRemoteAction(p,a.type);
+    }
+    netStateTimer-=dt; broadcastState();
+    mpOthers=[...mpPlayers.values()].filter(p=>p.entity).map(p=>p.entity);
+  }else if(gameMode==='client'){
+    const mx=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0);
+    const my=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0);
+    if(mx||my){const l=Math.hypot(mx,my)||1;moveEntity(player,mx/l*(player.speed||240)*dt,my/l*(player.speed||240)*dt);}
+    clientInput(dt);
+    for(const o of mpOthers||[]){
+      const k=Math.min(1,dt*14);
+      o.renderX=(o.renderX??o.x)+(o.x-(o.renderX??o.x))*k;
+      o.renderY=(o.renderY??o.y)+(o.y-(o.renderY??o.y))*k;
+    }
+    camX=clamp(player.x-VIEW_W/2,0,Math.max(0,WORLD_W-VIEW_W));
+    camY=clamp(player.y-VIEW_H/2,0,Math.max(0,WORLD_H-VIEW_H));
+  }
+}
+const WORLDS = {
+  main: { w:2200, h:1400, name:'Main World', bg:'#0c121c', grid:'#152032', tag:'🟢 MAIN' },
+  universe: { w:2600, h:1600, name:'MILO UNIVERSE', bg:'#0a0e1a', grid:'#1a1030', tag:'🌌 MILO UNIVERSE' },
+  jake: { w:2800, h:1700, name:'JAKE UNIVERSE', bg:'#120c08', grid:'#2a2010', tag:'💰 JAKE UNIVERSE' },
+  hyper: { w:3000, h:1800, name:'HYPER UNIVERSE', bg:'#0a0614', grid:'#1a0a28', tag:'⚡ HYPER UNIVERSE' }
+};
+
+let WORLD_W=WORLDS.main.w, WORLD_H=WORLDS.main.h;
+let currentWorld='main';
+let shopOpen=false, modOpen=false, modUnlocked=false, godMode=false;
+
+const keys={};
+let mouse={x:VIEW_W/2,y:VIEW_H/2, worldX:0, worldY:0};
+function queueClientAction(type){
+  if(gameMode!=='client') return;
+  pendingClientActions.push({id:++actionSeq,type});
+}
+c.addEventListener('mousemove',e=>{
+  const r=c.getBoundingClientRect();
+  mouse.x=(e.clientX-r.left)*(c.width/r.width);
+  mouse.y=(e.clientY-r.top)*(c.height/r.height);
+});
+
+addEventListener('keydown',e=>{
+  if(gameMode==='menu') return;
+  if(shopOpen || modOpen){
+    if(e.key==='Escape'){ closeShop(); closeMod(); e.preventDefault(); }
+    return;
+  }
+  keys[e.key.toLowerCase()]=true;
+  if(e.code==='Space'){e.preventDefault(); if(gameMode==='client') queueClientAction('roar'); else roar(); }
+  if(e.key.toLowerCase()==='f'){e.preventDefault(); if(gameMode==='client') queueClientAction('slash'); else slash(); }
+  if(e.key.toLowerCase()==='e'){e.preventDefault(); if(gameMode==='client') queueClientAction('heal'); else healAbility(); }
+  if(e.key.toLowerCase()==='r'){e.preventDefault(); if(gameMode==='client') queueClientAction('summon'); else summonMinions(); }
+  if(e.key.toLowerCase()==='q'){e.preventDefault(); if(gameMode==='client') queueClientAction('beam'); else hyperBeam(); }
+  if(e.key.toLowerCase()==='m'){ openMod(); e.preventDefault(); }
+});
+addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+
+let player,enemies,bosses,orbs,obstacles,particles,lasers,slashes,minions,zyns,beams,floatTexts,coins,kills;
+let dictatorDefeated,jakeDefeated,finalSpawned,challengeKeyBought,gameOver,won;
+let slashUnlocked,minionUnlocked,hyperUnlocked,necroUnlocked,necroActive,necroChance;
+let stickDefeated,alekunderDefeated,fazeDefeated,universeWon;
+let baileyDefeated,vittalaDefeated,eviljekDefeated,jakeUniverseWon;
+let hawkDefeated,epsteinDefeated,omegaDefeated,hyperWon;
+let uniBossIndex, jakeBossIndex, hyperBossIndex;
+let prices, coolMax, cooldown, slashCd, slashCdMax, slashPower, slashRangeBonus;
+let healCd, healCdMax, poisonTimer, poisonDps;
+let minionCd, minionCdMax, minionCount, minionDmg;
+let hyperCd, hyperCdMax, hyperPower, lifeSteal;
+let shake, spawnTimer, roarPower, roarRangeBonus, camX, camY, last=performance.now();
+let magnetRange, dmgReduce, portal, shrine, hitSfxCd=0, critChance=0.12;
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.style.opacity=1;
+  clearTimeout(t._tid); t._tid=setTimeout(()=>t.style.opacity=0,2400);
+}
+
+let audioCtx=null;
+function ensureAudio(){
+  if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+  if(audioCtx.state==='suspended') audioCtx.resume();
+  return audioCtx;
+}
+function sfx(type){
+  try{
+    const ctx=ensureAudio(), now=ctx.currentTime;
+    const o=ctx.createOscillator(), g=ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    const tones={
+      roar:['sawtooth',120,40,0.35,0.18], slash:['square',600,180,0.12,0.12],
+      heal:['sine',440,880,0.25,0.1], coin:['sine',900,1400,0.08,0.08],
+      hit:['triangle',200,60,0.1,0.1], kill:['square',300,80,0.2,0.1],
+      boss:['sawtooth',80,60,0.5,0.2], win:['sine',523,784,0.5,0.12],
+      die:['sawtooth',300,40,0.6,0.2], summon:['triangle',200,500,0.2,0.1],
+      portal:['sine',200,600,0.4,0.12], buy:['sine',600,800,0.1,0.08],
+      poison:['triangle',150,100,0.2,0.07], smash:['square',90,30,0.2,0.15],
+      beam:['sawtooth',400,80,0.3,0.14], crit:['sine',1000,1600,0.1,0.1]
+    };
+    const t=tones[type]||tones.hit;
+    o.type=t[0]; o.frequency.setValueAtTime(t[1],now);
+    o.frequency.exponentialRampToValueAtTime(Math.max(30,t[2]),now+t[3]);
+    g.gain.setValueAtTime(t[4],now); g.gain.exponentialRampToValueAtTime(0.001,now+t[3]+0.05);
+    o.start(now); o.stop(now+t[3]+0.05);
+  }catch(e){}
+}
+['keydown','pointerdown'].forEach(ev=>addEventListener(ev,()=>ensureAudio(),{once:true}));
+
+function openShop(){
+  if(modOpen) closeMod();
+  shopOpen=true;
+  document.getElementById('shopOverlay').classList.add('open');
+  document.getElementById('pausedBanner').classList.add('show');
+  document.getElementById('pausedBanner').textContent='PAUSED — Shop Open';
+  updateShop();
+}
+function closeShop(){
+  shopOpen=false;
+  document.getElementById('shopOverlay').classList.remove('open');
+  if(!modOpen) document.getElementById('pausedBanner').classList.remove('show');
+}
+// Main menu / Customize / multiplayer buttons
+const btnSolo=document.getElementById('btnSolo');
+const btnCreate=document.getElementById('btnCreate');
+const btnJoin=document.getElementById('btnJoin');
+const btnCustomize=document.getElementById('btnCustomize');
+const btnCustomSave=document.getElementById('btnCustomSave');
+const btnCustomBack=document.getElementById('btnCustomBack');
+const btnRoomGo=document.getElementById('btnRoomGo');
+const btnRoomBack=document.getElementById('btnRoomBack');
+const roomInput=document.getElementById('roomInput');
+const customName=document.getElementById('customName');
+const customColor=document.getElementById('customColor');
+
+btnSolo.onclick=()=>{
+  clearMultiplayer();
+  gameMode='solo';
+  hideMenu();
+  reset();
+  player.name=playerProfile.name;
+  player.color=playerProfile.color;
+  player.slot=0;
+  updateRoomBadge();
+};
+
+btnCreate.onclick=()=>{
+  btnCreate.disabled=true;
+  setMenuStatus('Creating room…');
+  try{ createRoom(); }
+  finally{ setTimeout(()=>btnCreate.disabled=false,350); }
+};
+
+btnJoin.onclick=()=>{
+  document.getElementById('menuMain').style.display='none';
+  document.getElementById('customPanel').classList.remove('open');
+  document.getElementById('menuSub').classList.add('open');
+  document.getElementById('menuSubTitle').textContent='Enter a room code:';
+  roomInput.value='';
+  roomInput.readOnly=false;
+  btnRoomGo.textContent='🔗 JOIN ROOM';
+  btnRoomGo.disabled=false;
+  setMenuStatus('');
+  setTimeout(()=>roomInput.focus(),0);
+};
+
+btnCustomize.onclick=()=>{
+  document.getElementById('menuMain').style.display='none';
+  document.getElementById('menuSub').classList.remove('open');
+  document.getElementById('customPanel').classList.add('open');
+  setMenuStatus('');
+  loadProfileUI();
+  setTimeout(()=>customName.focus(),0);
+};
+
+btnCustomSave.onclick=()=>saveProfile();
+btnCustomBack.onclick=()=>{
+  document.getElementById('customPanel').classList.remove('open');
+  document.getElementById('menuMain').style.display='flex';
+  setMenuStatus('');
+};
+
+customName.addEventListener('input',()=>{
+  document.getElementById('customPreview').textContent=cleanName(customName.value||'Charlie');
+});
+customColor.addEventListener('input',()=>{
+  document.getElementById('customPreview').style.color=customColor.value||MP_COLORS[0];
+});
+
+btnRoomBack.onclick=()=>{
+  if(gameMode==='host' || gameMode==='client' || socket){ clearMultiplayer(); }
+  gameMode='menu';
+  document.getElementById('menuSub').classList.remove('open');
+  document.getElementById('customPanel').classList.remove('open');
+  document.getElementById('menuMain').style.display='flex';
+  roomInput.value='';
+  roomInput.readOnly=false;
+  btnRoomGo.disabled=false;
+  setMenuStatus('');
+  updateRoomBadge();
+};
+
+btnRoomGo.onclick=()=>{
+  if(isHost && socket?.readyState===WebSocket.OPEN){
+    startHostGame();
+    return;
+  }
+  if(!isHost && !socket){
+    joinRoom(roomInput.value);
+  }
+};
+
+roomInput.addEventListener('input',()=>{
+  roomInput.value=roomInput.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6);
+});
+roomInput.addEventListener('keydown',e=>{
+  if(e.key==='Enter' && !btnRoomGo.disabled) btnRoomGo.click();
+});
+
+document.getElementById('shopBtn').onclick=()=>{ shopOpen?closeShop():openShop(); };
+document.getElementById('shopClose').onclick=closeShop;
+document.getElementById('shopOverlay').addEventListener('click',e=>{ if(e.target.id==='shopOverlay') closeShop(); });
+
+function openMod(){
+  if(shopOpen) closeShop();
+  modOpen=true;
+  document.getElementById('modOverlay').classList.add('open');
+  document.getElementById('pausedBanner').classList.add('show');
+  document.getElementById('pausedBanner').textContent='PAUSED — Mod Panel';
+  document.getElementById('codeInput').value='';
+  refreshModPanel();
+  setTimeout(()=>document.getElementById('codeInput').focus(),50);
+}
+function closeMod(){
+  modOpen=false;
+  document.getElementById('modOverlay').classList.remove('open');
+  if(!shopOpen) document.getElementById('pausedBanner').classList.remove('show');
+}
+document.getElementById('modBtn').onclick=()=>{ modOpen?closeMod():openMod(); };
+document.getElementById('modClose').onclick=closeMod;
+document.getElementById('modOverlay').addEventListener('click',e=>{ if(e.target.id==='modOverlay') closeMod(); });
+
+function tryUnlockCode(){
+  const code=(document.getElementById('codeInput').value||'').trim();
+  if(code==='0912'){
+    modUnlocked=true;
+    const btn=document.getElementById('modBtn');
+    btn.style.display='inline-block';
+    btn.style.visibility='visible';
+    toast('Mod panel unlocked! Scroll for all cheats.');
+    refreshModPanel();
+  }else{
+    toast('Wrong code — try 0912');
+    document.getElementById('codeInput').value='';
+    document.getElementById('codeInput').focus();
+  }
+}
+document.getElementById('codeSubmit').onclick=tryUnlockCode;
+document.getElementById('codeInput').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){ e.preventDefault(); tryUnlockCode(); }
+});
+
+function refreshModPanel(){
+  const items=document.getElementById('modItems');
+  const codeBox=document.getElementById('codeBox');
+  const sub=document.getElementById('modSub');
+  if(!modUnlocked){
+    codeBox.style.display='flex';
+    items.classList.remove('open');
+    items.style.display='none';
+    sub.textContent='Enter code 0912 to unlock mods. Game is paused.';
+    return;
+  }
+  codeBox.style.display='none';
+  items.classList.add('open');
+  items.style.display='flex';
+  sub.textContent='All mods unlocked · Game paused · Press M anytime';
+  items.innerHTML='';
+  const mods=[
+    {label:'💰 +500 Coins', fn:()=>{ coins+=500; toast('+500 coins'); }},
+    {label:'💰 +5000 Coins', fn:()=>{ coins+=5000; toast('+5000 coins'); }},
+    {label:'💰 +99999 Coins', fn:()=>{ coins+=99999; toast('+99999 coins'); }},
+    {label:'❤️ Full Heal + Max HP +50', fn:()=>{ player.maxHp+=50; player.hp=player.maxHp; toast('Healed & +50 Max HP'); }},
+    {label:'❤️ Instant Full Heal', fn:()=>{ player.hp=player.maxHp; toast('Full HP'); }},
+    {label:'🛡 +100 Shield', fn:()=>{ player.shield+=100; toast('+100 shield'); }},
+    {label:'🛡 +500 Shield', fn:()=>{ player.shield+=500; toast('+500 shield'); }},
+    {label:'⚡ Super Speed', fn:()=>{ player.speed+=80; toast('Speed +80'); }},
+    {label:'⚡ Max Speed', fn:()=>{ player.speed=500; toast('Speed maxed'); }},
+    {label:'📢 Max Roar Power', fn:()=>{ roarPower=250; toast('Roar 250'); }},
+    {label:'📢 God Roar', fn:()=>{ roarPower=999; coolMax=0.3; toast('God roar'); }},
+    {label:'⚔️ Unlock/Max Slash', fn:()=>{ slashUnlocked=true; slashPower=3; slashCdMax=1.5; slashRangeBonus=50; toast('Slash maxed'); }},
+    {label:'⚡ Unlock Hyper Beam', fn:()=>{ hyperUnlocked=true; hyperPower=2; hyperCdMax=2; toast('Hyper Beam unlocked'); }},
+    {label:'⚡ Max Hyper Beam', fn:()=>{ hyperUnlocked=true; hyperPower=5; hyperCdMax=1; toast('Hyper Beam maxed'); }},
+    {label:'👾 Unlock Minions', fn:()=>{ minionUnlocked=true; minionCount=5; minionDmg=80; toast('Minions unlocked'); }},
+    {label:'👾 Army of Minions', fn:()=>{ minionUnlocked=true; minionCount=12; minionDmg=120; minionCdMax=2; toast('Minion army'); }},
+    {label:(godMode?'🟢 God Mode ON — click to disable':'🔴 God Mode OFF — click to enable'), fn:()=>{ godMode=!godMode; toast(godMode?'God Mode ON':'God Mode OFF'); refreshModPanel(); }},
+    {label:(necroActive?`🟢 Necro Revive ON (${Math.round(necroChance*100)}%)`:'🔴 Necro Revive OFF / Unlock'), fn:()=>{
+      if(!necroUnlocked){ necroUnlocked=true; necroActive=true; necroChance=1.0; toast('Necro unlocked — every kill becomes an ally!'); refreshModPanel(); return; }
+      necroActive=!necroActive; toast(necroActive?'Necro ON — all kills revive as allies':'Necro OFF'); refreshModPanel();
+    }},
+    {label:'💀 Necro 100% — Every Kill Revives', fn:()=>{
+      necroUnlocked=true; necroActive=true; necroChance=1.0;
+      toast('Every killed unit (including bosses) becomes your ally!'); refreshModPanel();
+    }},
+    {label:'💀 Kill All Enemies', fn:()=>{ enemies=[]; toast('Enemies wiped'); }},
+    {label:'💀 Kill Current Bosses', fn:()=>{ for(const b of bosses) b.hp=0; toast('Bosses set to 0 HP'); }},
+    {label:'🔑 Unlock Challenge Key', fn:()=>{ jakeDefeated=true; challengeKeyBought=true; toast('Key ready'); }},
+    {label:'🎯 +Crit Chance (+10%)', fn:()=>{ critChance=Math.min(0.8,critChance+0.1); toast('Crit '+Math.round(critChance*100)+'%'); }},
+    {label:'🎯 Max Crit (80%)', fn:()=>{ critChance=0.8; toast('Crit 80%'); }},
+    {label:'🩸 +Life Steal (+10%)', fn:()=>{ lifeSteal=Math.min(0.5,lifeSteal+0.1); toast('Lifesteal '+Math.round(lifeSteal*100)+'%'); }},
+    {label:'🩸 Max Life Steal', fn:()=>{ lifeSteal=0.5; toast('Lifesteal 50%'); }},
+    {label:'🪨 Max Armor', fn:()=>{ dmgReduce=0.5; toast('Armor 50%'); }},
+    {label:'🧲 Super Magnet', fn:()=>{ magnetRange=400; toast('Magnet range 400'); }},
+    {label:'⏱ Reset All Cooldowns', fn:()=>{ cooldown=0; slashCd=0; healCd=0; minionCd=0; hyperCd=0; toast('CDs cleared'); }},
+    {label:'🌌 Warp → MILO UNIVERSE', fn:()=>{ closeMod(); enterUniverse(); }},
+    {label:'💰 Warp → JAKE UNIVERSE', fn:()=>{ closeMod(); enterJakeUniverse(); }},
+    {label:'⚡ Warp → HYPER UNIVERSE', fn:()=>{ closeMod(); enterHyperUniverse(); }},
+    {label:'🟢 Warp → Main World', fn:()=>{ closeMod();
+      currentWorld='main'; WORLD_W=WORLDS.main.w; WORLD_H=WORLDS.main.h;
+      obstacles=buildMainObstacles(); enemies=[]; bosses=[]; portal=null; shrine=null;
+      player.x=200; player.y=WORLD_H/2; camX=0; camY=0;
+      document.getElementById('title').textContent='🟢 Charlie MONSTER';
+      toast('Warped to Main');
+    }},
+  ];
+  for(const m of mods){
+    const b=document.createElement('button');
+    b.textContent=m.label;
+    b.onclick=()=>{ m.fn(); updateUI(); };
+    items.appendChild(b);
+  }
+}
+
+function buildMainObstacles(){
+  return [
+    {x:280,y:110,w:180,h:36,hp:Infinity,solid:true},{x:620,y:90,w:48,h:200,hp:Infinity,solid:true},
+    {x:980,y:80,w:190,h:34,hp:Infinity,solid:true},{x:1400,y:140,w:160,h:40,hp:Infinity,solid:true},
+    {x:1800,y:90,w:50,h:220,hp:Infinity,solid:true},{x:220,y:420,w:190,h:40,hp:Infinity,solid:true},
+    {x:560,y:480,w:140,h:42,hp:Infinity,solid:true},{x:920,y:400,w:55,h:180,hp:Infinity,solid:true},
+    {x:1300,y:520,w:170,h:38,hp:Infinity,solid:true},{x:1700,y:450,w:120,h:40,hp:Infinity,solid:true},
+    {x:400,y:780,w:200,h:38,hp:Infinity,solid:true},{x:900,y:850,w:60,h:200,hp:Infinity,solid:true},
+    {x:1400,y:900,w:180,h:36,hp:Infinity,solid:true},{x:1900,y:780,w:140,h:40,hp:Infinity,solid:true},
+    {x:300,y:1150,w:160,h:38,hp:Infinity,solid:true},{x:800,y:1200,w:200,h:36,hp:Infinity,solid:true},
+    {x:1400,y:1100,w:55,h:180,hp:Infinity,solid:true},{x:1850,y:1180,w:150,h:40,hp:Infinity,solid:true},
+    {x:450,y:250,w:90,h:38,hp:80,solid:true,breakable:true},{x:780,y:320,w:100,h:36,hp:70,solid:true,breakable:true},
+    {x:1150,y:280,w:85,h:38,hp:90,solid:true,breakable:true},{x:1550,y:350,w:110,h:40,hp:100,solid:true,breakable:true},
+    {x:350,y:600,w:95,h:36,hp:75,solid:true,breakable:true},{x:700,y:700,w:120,h:40,hp:110,solid:true,breakable:true},
+    {x:1100,y:650,w:90,h:38,hp:85,solid:true,breakable:true},{x:1600,y:700,w:100,h:36,hp:95,solid:true,breakable:true},
+    {x:500,y:980,w:110,h:38,hp:100,solid:true,breakable:true},{x:1050,y:1050,w:95,h:40,hp:90,solid:true,breakable:true},
+    {x:1500,y:980,w:120,h:36,hp:110,solid:true,breakable:true},{x:1900,y:1050,w:90,h:38,hp:80,solid:true,breakable:true}
+  ];
+}
+function buildUniverseObstacles(){
+  return [
+    {x:200,y:150,w:220,h:40,hp:Infinity,solid:true},{x:600,y:100,w:50,h:250,hp:Infinity,solid:true},
+    {x:1000,y:200,w:180,h:36,hp:Infinity,solid:true},{x:1500,y:120,w:55,h:220,hp:Infinity,solid:true},
+    {x:2000,y:180,w:200,h:40,hp:Infinity,solid:true},{x:300,y:500,w:160,h:38,hp:Infinity,solid:true},
+    {x:800,y:550,w:200,h:40,hp:Infinity,solid:true},{x:1300,y:480,w:50,h:200,hp:Infinity,solid:true},
+    {x:1800,y:520,w:170,h:36,hp:Infinity,solid:true},{x:400,y:900,w:190,h:40,hp:Infinity,solid:true},
+    {x:900,y:950,w:60,h:220,hp:Infinity,solid:true},{x:1400,y:880,w:180,h:38,hp:Infinity,solid:true},
+    {x:2000,y:1000,w:150,h:40,hp:Infinity,solid:true},{x:250,y:1300,w:200,h:36,hp:Infinity,solid:true},
+    {x:1100,y:1350,w:220,h:40,hp:Infinity,solid:true},{x:1800,y:1280,w:55,h:200,hp:Infinity,solid:true},
+    {x:500,y:300,w:100,h:40,hp:120,solid:true,breakable:true},{x:1100,y:350,w:110,h:38,hp:130,solid:true,breakable:true},
+    {x:1700,y:300,w:95,h:40,hp:110,solid:true,breakable:true},{x:650,y:700,w:120,h:42,hp:140,solid:true,breakable:true},
+    {x:1200,y:750,w:100,h:38,hp:120,solid:true,breakable:true},{x:1900,y:700,w:110,h:40,hp:130,solid:true,breakable:true},
+    {x:550,y:1100,w:115,h:38,hp:125,solid:true,breakable:true},{x:1500,y:1150,w:130,h:40,hp:145,solid:true,breakable:true}
+  ];
+}
+function buildJakeObstacles(){
+  return [
+    {x:180,y:120,w:200,h:40,hp:Infinity,solid:true},{x:550,y:80,w:55,h:240,hp:Infinity,solid:true},
+    {x:950,y:160,w:190,h:36,hp:Infinity,solid:true},{x:1450,y:100,w:50,h:230,hp:Infinity,solid:true},
+    {x:2000,y:150,w:210,h:40,hp:Infinity,solid:true},{x:2400,y:200,w:55,h:200,hp:Infinity,solid:true},
+    {x:250,y:480,w:170,h:38,hp:Infinity,solid:true},{x:750,y:520,w:200,h:40,hp:Infinity,solid:true},
+    {x:1250,y:450,w:55,h:210,hp:Infinity,solid:true},{x:1750,y:500,w:180,h:36,hp:Infinity,solid:true},
+    {x:2300,y:480,w:160,h:40,hp:Infinity,solid:true},{x:350,y:900,w:200,h:40,hp:Infinity,solid:true},
+    {x:850,y:950,w:60,h:230,hp:Infinity,solid:true},{x:1400,y:880,w:190,h:38,hp:Infinity,solid:true},
+    {x:1950,y:980,w:55,h:200,hp:Infinity,solid:true},{x:2450,y:920,w:170,h:40,hp:Infinity,solid:true},
+    {x:200,y:1350,w:220,h:36,hp:Infinity,solid:true},{x:1000,y:1400,w:200,h:40,hp:Infinity,solid:true},
+    {x:1800,y:1320,w:55,h:220,hp:Infinity,solid:true},{x:2300,y:1450,w:190,h:36,hp:Infinity,solid:true},
+    {x:480,y:280,w:110,h:40,hp:140,solid:true,breakable:true},{x:1100,y:320,w:120,h:38,hp:150,solid:true,breakable:true},
+    {x:1700,y:280,w:100,h:40,hp:130,solid:true,breakable:true},{x:2200,y:350,w:115,h:38,hp:145,solid:true,breakable:true},
+    {x:600,y:700,w:130,h:42,hp:160,solid:true,breakable:true},{x:1500,y:720,w:110,h:40,hp:140,solid:true,breakable:true},
+    {x:2100,y:680,w:120,h:38,hp:150,solid:true,breakable:true},{x:500,y:1150,w:125,h:40,hp:155,solid:true,breakable:true},
+    {x:1300,y:1200,w:140,h:42,hp:165,solid:true,breakable:true},{x:2000,y:1180,w:115,h:38,hp:150,solid:true,breakable:true}
+  ];
+}
+function buildHyperObstacles(){
+  return [
+    {x:200,y:140,w:240,h:40,hp:Infinity,solid:true},{x:700,y:100,w:55,h:260,hp:Infinity,solid:true},
+    {x:1200,y:180,w:200,h:38,hp:Infinity,solid:true},{x:1700,y:120,w:55,h:240,hp:Infinity,solid:true},
+    {x:2300,y:160,w:220,h:40,hp:Infinity,solid:true},{x:2700,y:200,w:55,h:220,hp:Infinity,solid:true},
+    {x:300,y:520,w:180,h:40,hp:Infinity,solid:true},{x:900,y:560,w:220,h:40,hp:Infinity,solid:true},
+    {x:1500,y:500,w:55,h:220,hp:Infinity,solid:true},{x:2000,y:540,w:200,h:38,hp:Infinity,solid:true},
+    {x:2550,y:500,w:180,h:40,hp:Infinity,solid:true},{x:400,y:950,w:220,h:40,hp:Infinity,solid:true},
+    {x:1000,y:1000,w:60,h:240,hp:Infinity,solid:true},{x:1600,y:920,w:200,h:38,hp:Infinity,solid:true},
+    {x:2200,y:980,w:55,h:220,hp:Infinity,solid:true},{x:2700,y:940,w:180,h:40,hp:Infinity,solid:true},
+    {x:250,y:1450,w:240,h:38,hp:Infinity,solid:true},{x:1200,y:1500,w:220,h:40,hp:Infinity,solid:true},
+    {x:2000,y:1400,w:55,h:240,hp:Infinity,solid:true},{x:2500,y:1520,w:200,h:38,hp:Infinity,solid:true},
+    {x:550,y:300,w:120,h:40,hp:160,solid:true,breakable:true},{x:1300,y:340,w:130,h:40,hp:170,solid:true,breakable:true},
+    {x:1900,y:300,w:110,h:40,hp:150,solid:true,breakable:true},{x:2500,y:360,w:120,h:40,hp:165,solid:true,breakable:true},
+    {x:700,y:750,w:140,h:42,hp:180,solid:true,breakable:true},{x:1600,y:780,w:120,h:40,hp:160,solid:true,breakable:true},
+    {x:2300,y:720,w:130,h:40,hp:170,solid:true,breakable:true},{x:600,y:1200,w:130,h:40,hp:175,solid:true,breakable:true},
+    {x:1400,y:1250,w:150,h:42,hp:185,solid:true,breakable:true},{x:2200,y:1220,w:120,h:40,hp:160,solid:true,breakable:true}
+  ];
+}
+
+function reset(){
+  closeShop(); closeMod();
+  currentWorld='main';
+  WORLD_W=WORLDS.main.w; WORLD_H=WORLDS.main.h;
+  player={x:180,y:WORLD_H/2,r:19,hp:60,maxHp:60,shield:0,speed:240,name:playerProfile.name,color:playerProfile.color,slot:0};
+  enemies=[];bosses=[];orbs=[];particles=[];lasers=[];slashes=[];minions=[];zyns=[];beams=[];floatTexts=[];
+  coins=0;kills=0;
+  dictatorDefeated=false;jakeDefeated=false;finalSpawned=false;challengeKeyBought=false;
+  gameOver=false;won=false;slashUnlocked=false;minionUnlocked=false;hyperUnlocked=false;
+  necroUnlocked=false;necroActive=false;necroChance=1.0;
+  stickDefeated=false;alekunderDefeated=false;fazeDefeated=false;universeWon=false;
+  baileyDefeated=false;vittalaDefeated=false;eviljekDefeated=false;jakeUniverseWon=false;
+  hawkDefeated=false;epsteinDefeated=false;omegaDefeated=false;hyperWon=false;
+  uniBossIndex=0; jakeBossIndex=0; hyperBossIndex=0;
+  prices={
+    speed:30, power:36, cd:42, shield:46, maxhp:55, range:50, magnet:60, armor:70, key:180,
+    slashDmg:40, slashCdUp:55, slashRange:48,
+    minionCount:60, minionDmg:55, minionCdUp:50,
+    hyperDmg:70, hyperCdUp:65
+  };
+  coolMax=2.4; cooldown=0; slashCd=0; slashCdMax=4.5;
+  slashPower=1; slashRangeBonus=0;
+  healCd=0; healCdMax=30; poisonTimer=0; poisonDps=0;
+  minionCd=0; minionCdMax=7; minionCount=2; minionDmg=40;
+  hyperCd=0; hyperCdMax=5; hyperPower=1; lifeSteal=0.05; critChance=0.12;
+  shake=0; spawnTimer=1.4;
+  roarPower=78; roarRangeBonus=0; magnetRange=0; dmgReduce=0;
+  camX=0; camY=0; portal=null; shrine=null; hitSfxCd=0;
+  obstacles=buildMainObstacles();
+  for(let i=0;i<28;i++) spawnOrb();
+  updateShop();
+  document.getElementById('title').textContent='🟢 Charlie MONSTER';
+  document.getElementById('hint').textContent='Main → MILO → JAKE → HYPER. Secret shrine in JAKE (1000 coins) unlocks Necro Revive.';
+  toast('Charlie is ready');
+}
+
+function enterUniverse(){
+  currentWorld='universe'; WORLD_W=WORLDS.universe.w; WORLD_H=WORLDS.universe.h;
+  obstacles=buildUniverseObstacles();
+  enemies=[]; bosses=[]; lasers=[]; slashes=[]; minions=[]; zyns=[]; beams=[]; particles=[]; orbs=[]; floatTexts=[];
+  for(let i=0;i<35;i++) spawnOrb();
+  player.x=200; player.y=WORLD_H/2; player.hp=player.maxHp;
+  camX=0; camY=0; portal=null; shrine=null;
+  slashUnlocked=true; minionUnlocked=false; hyperUnlocked=false; won=false; gameOver=false;
+  stickDefeated=false;alekunderDefeated=false;fazeDefeated=false;universeWon=false;
+  uniBossIndex=0; kills=0; spawnTimer=0.85;
+  document.getElementById('title').textContent='🌌 MILO UNIVERSE';
+  toast('MILO UNIVERSE · Slash (F) unlocked!');
+  updateShop();
+}
+
+function enterJakeUniverse(){
+  currentWorld='jake'; WORLD_W=WORLDS.jake.w; WORLD_H=WORLDS.jake.h;
+  obstacles=buildJakeObstacles();
+  enemies=[]; bosses=[]; lasers=[]; slashes=[]; minions=[]; zyns=[]; beams=[]; particles=[]; orbs=[]; floatTexts=[];
+  for(let i=0;i<40;i++) spawnOrb();
+  player.x=200; player.y=WORLD_H/2; player.hp=player.maxHp;
+  camX=0; camY=0; portal=null;
+  // Secret necro shrine
+  shrine={x:WORLD_W/2, y:WORLD_H/2, r:36, cost:1000, used:necroUnlocked};
+  slashUnlocked=true; minionUnlocked=true; hyperUnlocked=false; gameOver=false;
+  baileyDefeated=false;vittalaDefeated=false;eviljekDefeated=false;jakeUniverseWon=false;
+  jakeBossIndex=0; kills=0; spawnTimer=0.7;
+  document.getElementById('title').textContent='💰 JAKE UNIVERSE';
+  toast('JAKE UNIVERSE · Minions (R) · Secret shrine at map center');
+  updateShop();
+}
+
+function enterHyperUniverse(){
+  currentWorld='hyper'; WORLD_W=WORLDS.hyper.w; WORLD_H=WORLDS.hyper.h;
+  obstacles=buildHyperObstacles();
+  enemies=[]; bosses=[]; lasers=[]; slashes=[]; minions=[]; zyns=[]; beams=[]; particles=[]; orbs=[]; floatTexts=[];
+  for(let i=0;i<45;i++) spawnOrb();
+  player.x=200; player.y=WORLD_H/2; player.hp=player.maxHp;
+  camX=0; camY=0; portal=null; shrine=null;
+  slashUnlocked=true; minionUnlocked=true; hyperUnlocked=true; gameOver=false;
+  hawkDefeated=false;epsteinDefeated=false;omegaDefeated=false;hyperWon=false;
+  hyperBossIndex=0; kills=0; spawnTimer=0.6;
+  document.getElementById('title').textContent='⚡ HYPER UNIVERSE';
+  toast('HYPER UNIVERSE · Hyper Beam (Q) unlocked!');
+  updateShop();
+}
+
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
+function circleRect(circle,rect){
+  const x=clamp(circle.x,rect.x,rect.x+rect.w);
+  const y=clamp(circle.y,rect.y,rect.y+rect.h);
+  return Math.hypot(circle.x-x,circle.y-y)<circle.r;
+}
+function blocked(x,y,r=19){
+  if(x<r||y<r||x>WORLD_W-r||y>WORLD_H-r) return true;
+  return obstacles.some(o=>o.solid&&circleRect({x,y,r},o));
+}
+function segmentHitsWall(x1,y1,x2,y2){
+  const n=Math.ceil(Math.hypot(x2-x1,y2-y1)/8);
+  for(let i=0;i<=n;i++){
+    const t=i/n, x=x1+(x2-x1)*t, y=y1+(y2-y1)*t;
+    if(obstacles.some(o=>o.solid&&x>=o.x&&x<=o.x+o.w&&y>=o.y&&y<=o.y+o.h)) return true;
+  }
+  return false;
+}
+function moveEntity(o,dx,dy){
+  const nx=o.x+dx; if(!blocked(nx,o.y,o.r)) o.x=nx;
+  const ny=o.y+dy; if(!blocked(o.x,ny,o.r)) o.y=ny;
+}
+function steerToward(o, tx, ty, speed, dt){
+  const dx=tx-o.x, dy=ty-o.y, len=Math.hypot(dx,dy)||1;
+  const step=speed*dt;
+  const dirs=[
+    {x:dx/len,y:dy/len},{x:-dy/len,y:dx/len},{x:dy/len,y:-dx/len},
+    {x:dx/len*0.6-dy/len*0.8,y:dy/len*0.6+dx/len*0.8},
+    {x:dx/len*0.6+dy/len*0.8,y:dy/len*0.6-dx/len*0.8},
+    {x:1,y:0},{x:-1,y:0},{x:0,y:1},{x:0,y:-1},
+    {x:0.7,y:0.7},{x:-0.7,y:0.7},{x:0.7,y:-0.7},{x:-0.7,y:-0.7}
+  ];
+  let best=null, bestScore=Infinity;
+  for(const d of dirs){
+    const dl=Math.hypot(d.x,d.y)||1;
+    const ux=d.x/dl, uy=d.y/dl;
+    let nx=o.x, ny=o.y;
+    if(!blocked(o.x+ux*step, o.y, o.r)) nx=o.x+ux*step;
+    if(!blocked(nx, o.y+uy*step, o.r)) ny=o.y+uy*step;
+    if(nx===o.x && ny===o.y) continue;
+    let score=Math.hypot(tx-nx, ty-ny);
+    if(blocked(nx+ux*12, ny+uy*12, o.r)) score+=60;
+    if(segmentHitsWall(o.x, o.y, nx, ny)) score+=100;
+    if(score<bestScore){ bestScore=score; best={nx,ny}; }
+  }
+  if(best){ o.x=best.nx; o.y=best.ny; }
+}
+
+function spawnFloat(x,y,text,color,size){
+  floatTexts.push({x,y,text,color:color||'#fff',size:size||14,t:1,vy:-40});
+}
+
+function applyDamage(target, baseDmg, opts={}){
+  let dmg=baseDmg;
+  let crit=false;
+  if(Math.random()<critChance){ dmg=Math.round(dmg*1.75); crit=true; sfx('crit'); }
+  target.hp-=dmg;
+  spawnFloat(target.x, target.y-20, (crit?'CRIT ':'')+Math.round(dmg), crit?'#ffd700':'#ff6b6b', crit?18:14);
+  if(lifeSteal>0 && !opts.noLS){
+    const heal=Math.round(dmg*lifeSteal);
+    if(heal>0){ player.hp=Math.min(player.maxHp, player.hp+heal); spawnFloat(player.x, player.y-25, '+'+heal, '#5fff8a', 13); }
+  }
+  return dmg;
+}
+
+function spawnOrb(){
+  let p,tries=0;
+  do{ p={x:40+Math.random()*(WORLD_W-80),y:40+Math.random()*(WORLD_H-80),r:8}; tries++; }
+  while((blocked(p.x,p.y,12)||dist(p,player)<100)&&tries<120);
+  orbs.push(p);
+}
+
+function spawnEnemy(x,y,type='normal'){
+  if(blocked(x,y,16)) return false;
+  let hpM=1, dmgM=1, spdM=1;
+  if(currentWorld==='universe'){ hpM=2.6; dmgM=2.0; spdM=1.25; }
+  else if(currentWorld==='jake'){ hpM=4.5; dmgM=3.2; spdM=1.45; }
+  else if(currentWorld==='hyper'){ hpM=5.5; dmgM=3.8; spdM=1.5; }
+
+  if(type==='fast') enemies.push({x,y,r:13,hp:28*hpM,maxHp:28*hpM,speed:155*spdM,type:'fast',dmg:9*dmgM});
+  else if(type==='tank') enemies.push({x,y,r:22,hp:95*hpM,maxHp:95*hpM,speed:55*spdM,type:'tank',dmg:18*dmgM});
+  else if(type==='ranger') enemies.push({x,y,r:14,hp:40*hpM,maxHp:40*hpM,speed:95*spdM,type:'ranger',dmg:8*dmgM,shot:1.5,keepDist:220});
+  else if(type==='boomer') enemies.push({x,y,r:12,hp:25*hpM,maxHp:25*hpM,speed:180*spdM,type:'boomer',dmg:30*dmgM,fuse:true});
+  else enemies.push({x,y,r:15,hp:48*hpM,maxHp:48*hpM,speed:88*spdM,type:'normal',dmg:13*dmgM});
+  return true;
+}
+
+function spawnRandomEnemy(){
+  const roll=Math.random();
+  let type='normal';
+  if(currentWorld==='hyper'){
+    if(roll<0.25) type='ranger';
+    else if(roll<0.45) type='boomer';
+    else if(roll<0.65) type='fast';
+    else if(roll<0.85) type='tank';
+  }else if(currentWorld==='universe'||currentWorld==='jake'){
+    if(roll<0.3) type='fast';
+    else if(roll<0.55) type='tank';
+    else if(currentWorld==='jake' && roll<0.7) type='ranger';
+  }else{
+    if(kills>=8 && roll<0.22) type='fast';
+    else if(kills>=14 && roll<0.38) type='tank';
+  }
+  for(let tries=0;tries<90;tries++){
+    const side=Math.floor(Math.random()*4);
+    let x,y;
+    if(side===0){x=30;y=40+Math.random()*(WORLD_H-80)}
+    else if(side===1){x=WORLD_W-30;y=40+Math.random()*(WORLD_H-80)}
+    else if(side===2){x=40+Math.random()*(WORLD_W-80);y=30}
+    else{x=40+Math.random()*(WORLD_W-80);y=WORLD_H-30}
+    if(dist({x,y},player)>320 && spawnEnemy(x,y,type)) return;
+  }
+}
+
+function findClearSpawn(r, preferredX, preferredY){
+  const candidates=[{x:preferredX,y:preferredY}];
+  for(let rad=80;rad<=400;rad+=60){
+    for(let a=0;a<12;a++){
+      const ang=(a/12)*Math.PI*2;
+      candidates.push({x:preferredX+Math.cos(ang)*rad, y:preferredY+Math.sin(ang)*rad});
+    }
+  }
+  candidates.push({x:WORLD_W-120,y:WORLD_H/2},{x:WORLD_W-150,y:300},{x:WORLD_W/2,y:WORLD_H-120});
+  for(const c of candidates){
+    const x=clamp(c.x,r+10,WORLD_W-r-10);
+    const y=clamp(c.y,r+10,WORLD_H-r-10);
+    if(!obstacles.some(o=>o.solid&&circleRect({x,y,r},o))) return {x,y};
+  }
+  return {x:WORLD_W-100, y:WORLD_H/2};
+}
+
+function spawnDictator(){ bosses.push({type:'dictator',name:'FILIP DICTATOR',x:WORLD_W-220,y:180,r:40,hp:340,maxHp:340,speed:68,summon:2.8}); sfx('boss'); toast('FILIP DICTATOR!'); }
+function spawnJake(){ bosses.push({type:'jake',name:'JAKE THE JEW',x:WORLD_W/2,y:WORLD_H-250,r:42,hp:480,maxHp:480,speed:78,goldPulse:0,stealTimer:3.5}); sfx('boss'); toast('JAKE THE JEW!'); }
+function spawnFinal(){ const pos=findClearSpawn(52,WORLD_W-200,WORLD_H-320); bosses.push({type:'final',name:'FILIP A',x:pos.x,y:pos.y,r:52,hp:1100,maxHp:1100,speed:105,laser:0,rage:false}); finalSpawned=true; sfx('boss'); toast('FILIP A!'); }
+function spawnStick(){ const pos=findClearSpawn(36,WORLD_W-250,200); bosses.push({type:'stick',name:'THE STICK',x:pos.x,y:pos.y,r:36,hp:560,maxHp:560,speed:115,jab:0,roll:3.5,rolling:false,rollTime:0,rollDx:0,rollDy:0}); uniBossIndex=1; sfx('boss'); toast('THE STICK!'); }
+function spawnAlekunder(){ const pos=findClearSpawn(44,WORLD_W/2,WORLD_H-200); bosses.push({type:'alekunder',name:'ALEKUNDER',x:pos.x,y:pos.y,r:44,hp:820,maxHp:820,speed:72,slam:0}); uniBossIndex=2; sfx('boss'); toast('ALEKUNDER!'); }
+function spawnFaze(){ const pos=findClearSpawn(50,WORLD_W-200,WORLD_H/2); bosses.push({type:'faze',name:'FAZE MILO NR',x:pos.x,y:pos.y,r:50,hp:1250,maxHp:1250,speed:95,laser:0,clone:0,rage:false}); uniBossIndex=3; sfx('boss'); toast('FAZE MILO NR!'); }
+function spawnBailey(){ const pos=findClearSpawn(40,WORLD_W-220,220); bosses.push({type:'bailey',name:'BAILEY',x:pos.x,y:pos.y,r:40,hp:2000,maxHp:2000,speed:100,shot:0}); jakeBossIndex=1; sfx('boss'); toast('BAILEY!'); }
+function spawnVittala(){ const pos=findClearSpawn(46,WORLD_W/2,WORLD_H-220); bosses.push({type:'vittala',name:'VITTALA KUKIRIN',x:pos.x,y:pos.y,r:46,hp:5000,maxHp:5000,speed:80,spin:0,zyn:2}); jakeBossIndex=2; sfx('boss'); toast('VITTALA KUKIRIN!'); }
+function spawnEvilJek(){ const pos=findClearSpawn(54,WORLD_W-200,WORLD_H/2); bosses.push({type:'eviljek',name:'EVILJEK64',x:pos.x,y:pos.y,r:54,hp:10000,maxHp:10000,speed:100,laser:0,summon:0,teleport:4,rage:false}); jakeBossIndex=3; sfx('boss'); toast('EVILJEK64!'); }
+function spawnHawking(){ const pos=findClearSpawn(48,WORLD_W-250,250); bosses.push({type:'hawking',name:'TITAN HAWKING',x:pos.x,y:pos.y,r:48,hp:6000,maxHp:6000,speed:70,pulse:0,phase:1}); hyperBossIndex=1; sfx('boss'); toast('TITAN HAWKING!'); }
+function spawnEpstein(){ const pos=findClearSpawn(46,WORLD_W/2,WORLD_H-250); bosses.push({type:'epstein',name:'SHADOW EPSTEIN',x:pos.x,y:pos.y,r:46,hp:8000,maxHp:8000,speed:90,shadow:0,phase:1}); hyperBossIndex=2; sfx('boss'); toast('SHADOW EPSTEIN!'); }
+function spawnOmega(){ const pos=findClearSpawn(60,WORLD_W-220,WORLD_H/2); bosses.push({type:'omega',name:'OVERLORD OMEGA YAHU',x:pos.x,y:pos.y,r:60,hp:20000,maxHp:20000,speed:85,laser:0,summon:0,beam:0,phase:1,rage:false}); hyperBossIndex=3; sfx('boss'); toast('OVERLORD OMEGA YAHU!'); }
+
+function hurt(amount){
+  if(godMode) return;
+  amount *= (1 - dmgReduce);
+  let s=Math.min(player.shield,amount);
+  player.shield-=s; amount-=s;
+  if(amount>0.5 && hitSfxCd<=0){ sfx('hit'); hitSfxCd=0.15; }
+  player.hp-=amount; shake=6;
+  if(amount>1) spawnFloat(player.x, player.y-15, '-'+Math.round(amount), '#ff4444', 12);
+  if(player.hp<=0){ player.hp=0; gameOver=true; sfx('die'); }
+}
+
+function destroyWallCompletely(o){
+  if(!o.solid) return;
+  o.solid=false; o.hp=0; sfx('smash');
+  for(let i=0;i<18;i++) particles.push({x:o.x+o.w/2,y:o.y+o.h/2,vx:(Math.random()-.5)*280,vy:(Math.random()-.5)*280,t:1.3,size:4+Math.random()*6});
+}
+function damageObstacle(o,dmg){
+  if(!o.breakable||!o.solid) return;
+  o.hp-=dmg; if(o.hp<=0) destroyWallCompletely(o);
+}
+
+function tryNecroRevive(dead){
+  if(!necroActive || !necroUnlocked) return false;
+  if(Math.random()>necroChance) return false;
+  // Revive as FRIENDLY ally — fights for Charlie, never attacks player
+  const isBoss=!!dead.isBoss || !!(dead.name && dead.maxHp && dead.maxHp>=300);
+  const allyHp=isBoss ? Math.max(250, Math.round((dead.maxHp||500)*0.3)) : Math.max(70, Math.round((dead.maxHp||40)*0.9));
+  const allyDmg=isBoss ? Math.max(50, Math.round((dead.maxHp||500)*0.008)) : Math.max(30, Math.round((dead.dmg||13)*1.6));
+  const allyR=isBoss ? Math.min(30, (dead.r||22)*0.75) : Math.max(11, dead.r||12);
+  minions.push({
+    x:dead.x||player.x+40, y:dead.y||player.y,
+    r:allyR, hp:allyHp, maxHp:allyHp, speed:isBoss?125:160,
+    life:isBoss?60:32, dmg:allyDmg, pulse:0, necro:true, name:dead.name||null
+  });
+  toast(isBoss?('NECRO ALLY: '+(dead.name||'BOSS')+' fights for you!'):'NECRO: ally summoned!');
+  sfx('summon');
+  return true;
+}
+
+function bossMove(b,dt){
+  if(b.type==='stick' && b.rolling){
+    b.rollTime-=dt;
+    const spd=320, nx=b.x+b.rollDx*spd*dt, ny=b.y+b.rollDy*spd*dt;
+    for(const o of obstacles){
+      if(!o.solid) continue;
+      if(circleRect({x:nx,y:ny,r:b.r+8},o)||circleRect({x:b.x,y:b.y,r:b.r+8},o)) destroyWallCompletely(o);
+    }
+    b.x=clamp(nx,b.r,WORLD_W-b.r); b.y=clamp(ny,b.r,WORLD_H-b.r);
+    if(b.rollTime<=0) b.rolling=false;
+    return;
+  }
+  if(b.type==='final'){
+    if(b.hp<b.maxHp*0.4) b.rage=true;
+    const spd=b.rage?b.speed*1.4:b.speed;
+    for(const o of obstacles){
+      if(!o.breakable||!o.solid) continue;
+      const cx=clamp(b.x,o.x,o.x+o.w), cy=clamp(b.y,o.y,o.y+o.h);
+      if(Math.hypot(b.x-cx,b.y-cy)<b.r+40) damageObstacle(o,450*dt);
+    }
+  }
+  if(b.type==='omega' && b.hp<b.maxHp*0.4) b.rage=true;
+  steerToward(b, player.x, player.y, b.rage?b.speed*1.3:b.speed, dt);
+}
+
+function healAbility(){
+  if(shopOpen||modOpen||gameOver||healCd>0) return;
+  const amount=Math.round(player.maxHp*0.65);
+  player.hp=Math.min(player.maxHp, player.hp+amount);
+  healCd=healCdMax; sfx('heal');
+  spawnFloat(player.x, player.y-30, '+'+amount, '#5fff8a', 18);
+  for(let i=0;i<12;i++) particles.push({x:player.x,y:player.y,vx:(Math.random()-.5)*80,vy:(Math.random()-.5)*80,t:0.8,size:5});
+  toast(`Healed ${amount} HP`);
+}
+
+function summonMinions(){
+  if(!minionUnlocked||shopOpen||modOpen||gameOver||minionCd>0) return;
+  minionCd=minionCdMax; sfx('summon');
+  for(let i=0;i<minionCount;i++){
+    const ang=(i/minionCount)*Math.PI*2;
+    minions.push({
+      x:player.x+Math.cos(ang)*40, y:player.y+Math.sin(ang)*40,
+      r:11, hp:110, maxHp:110, speed:160, life:22, dmg:minionDmg, pulse:0
+    });
+  }
+  toast(`Summoned ${minionCount} minions!`);
+}
+
+function hyperBeam(targetX=null,targetY=null){
+  if(!hyperUnlocked||shopOpen||modOpen||gameOver||hyperCd>0) return;
+  hyperCd=hyperCdMax; sfx('beam');
+  if(targetX==null||targetY==null){ mouse.worldX=mouse.x+camX; mouse.worldY=mouse.y+camY; targetX=mouse.worldX; targetY=mouse.worldY; }
+  const ang=Math.atan2(targetY-player.y, targetX-player.x);
+  const range=420;
+  beams.push({x:player.x,y:player.y,angle:ang,range,t:0.35,dmg:Math.round(roarPower*1.8*hyperPower)});
+  // Damage along ray
+  const steps=40;
+  for(let i=1;i<=steps;i++){
+    const t=i/steps;
+    const px=player.x+Math.cos(ang)*range*t;
+    const py=player.y+Math.sin(ang)*range*t;
+    for(const e of enemies){
+      if(Math.hypot(e.x-px,e.y-py)<e.r+14) applyDamage(e, Math.round(roarPower*1.8*hyperPower/steps*3));
+    }
+    for(const b of bosses){
+      if(Math.hypot(b.x-px,b.y-py)<b.r+14) applyDamage(b, Math.round(roarPower*1.2*hyperPower/steps*3));
+    }
+    for(const o of obstacles){
+      if(o.breakable&&o.solid&&px>=o.x&&px<=o.x+o.w&&py>=o.y&&py<=o.y+o.h) damageObstacle(o, 25);
+    }
+  }
+  toast('HYPER BEAM!');
+}
+
+function roar(){
+  if(shopOpen||modOpen||gameOver||(won&&currentWorld==='main')||cooldown>0) return;
+  cooldown=coolMax; sfx('roar');
+  particles.push({x:player.x,y:player.y,r:28,t:0.5,roar:true});
+  const range=125+roarRangeBonus+(roarPower-78)*0.35;
+  for(const e of enemies){
+    if(dist(player,e)<range && !segmentHitsWall(player.x,player.y,e.x,e.y)) applyDamage(e, roarPower);
+  }
+  for(const b of bosses){
+    if(dist(player,b)<range+15 && !segmentHitsWall(player.x,player.y,b.x,b.y)) applyDamage(b, Math.round(roarPower*0.62));
+  }
+  for(const o of obstacles){
+    if(o.breakable&&o.solid){
+      const q={x:clamp(player.x,o.x,o.x+o.w),y:clamp(player.y,o.y,o.y+o.h)};
+      if(Math.hypot(player.x-q.x,player.y-q.y)<range-10 && !segmentHitsWall(player.x,player.y,q.x,q.y)) damageObstacle(o,42);
+    }
+  }
+}
+
+function slash(){
+  if(!slashUnlocked||shopOpen||modOpen||gameOver||slashCd>0) return;
+  slashCd=slashCdMax; sfx('slash');
+  let angle=0, nearest=null, nd=1e9;
+  for(const e of enemies){ const d=dist(player,e); if(d<nd){nd=d;nearest=e} }
+  for(const b of bosses){ const d=dist(player,b); if(d<nd){nd=d;nearest=b} }
+  if(nearest) angle=Math.atan2(nearest.y-player.y, nearest.x-player.x);
+  else {
+    let mx=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0);
+    let my=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0);
+    if(mx||my) angle=Math.atan2(my,mx);
+  }
+  const base=Math.round(roarPower*2.4*slashPower);
+  const slashRange=95+slashRangeBonus;
+  const arc=1.1;
+  slashes.push({x:player.x,y:player.y,angle,t:0.35,range:slashRange});
+  for(const e of enemies){
+    const d=dist(player,e); if(d>slashRange+e.r) continue;
+    const a=Math.atan2(e.y-player.y,e.x-player.x);
+    let diff=Math.abs(a-angle); if(diff>Math.PI) diff=2*Math.PI-diff;
+    if(diff<arc) applyDamage(e, base);
+  }
+  for(const b of bosses){
+    const d=dist(player,b); if(d>slashRange+b.r) continue;
+    const a=Math.atan2(b.y-player.y,b.x-player.x);
+    let diff=Math.abs(a-angle); if(diff>Math.PI) diff=2*Math.PI-diff;
+    if(diff<arc) applyDamage(b, Math.round(base*0.7));
+  }
+  for(const o of obstacles){
+    if(!o.breakable||!o.solid) continue;
+    const cx=o.x+o.w/2, cy=o.y+o.h/2;
+    if(Math.hypot(cx-player.x,cy-player.y)>slashRange+40) continue;
+    const a=Math.atan2(cy-player.y,cx-player.x);
+    let diff=Math.abs(a-angle); if(diff>Math.PI) diff=2*Math.PI-diff;
+    if(diff<arc) damageObstacle(o,80);
+  }
+}
+
+function update(dt){
+  if(gameMode==='menu'){ return; }
+  if(shopOpen||modOpen){ draw(); updateUI(); return; }
+  if(gameOver){ draw(); updateUI(); return; }
+  // Client: render only + send input (host simulates)
+  if(gameMode==='client'){
+    newMultiplayerTick(dt);
+    try{draw();}catch(err){console.error('client draw error',err);}
+    try{updateUI();}catch(err){console.error('client HUD error',err);}
+    return;
+  }
+  if(gameMode==='host') newMultiplayerTick(dt);
+
+  mouse.worldX=mouse.x+camX; mouse.worldY=mouse.y+camY;
+
+  if(won && currentWorld==='main' && !portal) portal={x:player.x+90,y:player.y,r:28,dest:'universe',label:'MILO UNIVERSE'};
+  if(universeWon && currentWorld==='universe' && !portal) portal={x:player.x+90,y:player.y,r:28,dest:'jake',label:'JAKE UNIVERSE'};
+  if(jakeUniverseWon && currentWorld==='jake' && !portal) portal={x:player.x+90,y:player.y,r:28,dest:'hyper',label:'HYPER UNIVERSE'};
+
+  cooldown=Math.max(0,cooldown-dt);
+  slashCd=Math.max(0,slashCd-dt);
+  healCd=Math.max(0,healCd-dt);
+  minionCd=Math.max(0,minionCd-dt);
+  hyperCd=Math.max(0,hyperCd-dt);
+  hitSfxCd=Math.max(0,hitSfxCd-dt);
+  shake=Math.max(0,shake-dt*16);
+  if(poisonTimer>0){ poisonTimer-=dt; hurt(poisonDps*dt); }
+
+  const targetCamX=player.x-VIEW_W/2, targetCamY=player.y-VIEW_H/2;
+  camX+=(targetCamX-camX)*Math.min(1,8*dt);
+  camY+=(targetCamY-camY)*Math.min(1,8*dt);
+  camX=clamp(camX,0,WORLD_W-VIEW_W);
+  camY=clamp(camY,0,WORLD_H-VIEW_H);
+
+  if(portal && dist(player,portal)<player.r+portal.r+10){
+    sfx('portal');
+    if(portal.dest==='universe'){ enterUniverse(); return; }
+    if(portal.dest==='jake'){ enterJakeUniverse(); return; }
+    if(portal.dest==='hyper'){ enterHyperUniverse(); return; }
+  }
+
+  // Secret shrine
+  if(shrine && !shrine.used && dist(player,shrine)<player.r+shrine.r+8){
+    if(coins>=shrine.cost){
+      coins-=shrine.cost; shrine.used=true; necroUnlocked=true; necroActive=true; necroChance=1.0;
+      sfx('win'); toast('NECRO REVIVE unlocked! Every kill becomes a purple ally!');
+    }else if(Math.random()<0.02) toast(`Shrine needs ${shrine.cost} coins (you have ${coins})`);
+  }
+
+  const freezeCombat=(won&&currentWorld==='main')||(universeWon&&currentWorld==='universe'&&!!portal)||(jakeUniverseWon&&currentWorld==='jake'&&!!portal);
+
+  if(!freezeCombat){
+    spawnTimer-=dt;
+    if(spawnTimer<=0){
+      const maxM=currentWorld==='hyper'?24:currentWorld==='jake'?22:currentWorld==='universe'?20:16;
+      if(enemies.length<Math.min(maxM,5+Math.floor(kills/3))) spawnRandomEnemy();
+      const base=currentWorld==='hyper'?1.15:currentWorld==='jake'?1.3:currentWorld==='universe'?1.45:2.3;
+      spawnTimer=Math.max(0.45, base-kills*0.028);
+    }
+  }
+
+  let mx=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0);
+  let my=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0);
+  if(mx||my){ const l=Math.hypot(mx,my)||1; moveEntity(player,mx/l*player.speed*dt,my/l*player.speed*dt); }
+
+  // Nearest living player among host + co-op allies
+  function nearestTarget(from){
+    let best=player, bd=dist(from,player);
+    for(const o of (mpOthers||[])){
+      if(!o||o.hp<=0) continue;
+      const d2=dist(from,o);
+      if(d2<bd){ best=o; bd=d2; }
+    }
+    return best;
+  }
+  function hurtTarget(t, amount){
+    if(t===player) hurt(amount);
+    else if(t && t.slot!=null){
+      if(godMode) return;
+      t.hp-=amount*(1-dmgReduce);
+      if(t.hp<0) t.hp=0;
+    }
+  }
+
+  if(!freezeCombat){
+    for(let i=enemies.length-1;i>=0;i--){
+      const e=enemies[i];
+      const tgt=nearestTarget(e);
+      if(e.type==='ranger'){
+        const d=dist(tgt,e);
+        if(d<e.keepDist-40){
+          const ang=Math.atan2(e.y-tgt.y,e.x-tgt.x);
+          steerToward(e, e.x+Math.cos(ang)*100, e.y+Math.sin(ang)*100, e.speed, dt);
+        }else if(d>e.keepDist+40) steerToward(e, tgt.x, tgt.y, e.speed, dt);
+        e.shot-=dt;
+        if(e.shot<=0 && d<320 && !segmentHitsWall(e.x,e.y,tgt.x,tgt.y)){
+          e.shot=2.0;
+          lasers.push({x:e.x,y:e.y,tx:tgt.x,ty:tgt.y,t:0.25,plasma:true});
+          hurtTarget(tgt, e.dmg*0.8);
+        }
+      }else if(e.type==='boomer'){
+        steerToward(e, tgt.x, tgt.y, e.speed, dt);
+        if(dist(tgt,e)<tgt.r+e.r+6){
+          hurtTarget(tgt, e.dmg); sfx('smash');
+          for(let j=0;j<14;j++){ const a=(j/14)*Math.PI*2; particles.push({x:e.x,y:e.y,vx:Math.cos(a)*160,vy:Math.sin(a)*160,t:0.6,size:5}); }
+          e.hp=0;
+        }
+      }else{
+        steerToward(e, tgt.x, tgt.y, e.speed, dt);
+        if(dist(tgt,e)<tgt.r+e.r) hurtTarget(tgt, (e.dmg||13)*dt);
+      }
+      if(e.hp<=0){
+        const dead={...e}; enemies.splice(i,1); kills++; sfx('kill');
+        let coinVal=e.type==='tank'?14:e.type==='fast'?9:e.type==='ranger'?11:e.type==='boomer'?8:7;
+        if(currentWorld==='universe') coinVal=Math.round(coinVal*1.5);
+        if(currentWorld==='jake') coinVal=Math.round(coinVal*2.0);
+        if(currentWorld==='hyper') coinVal=Math.round(coinVal*2.4);
+        coins+=coinVal;
+        tryNecroRevive(dead);
+        for(let j=0;j<6;j++) particles.push({x:e.x,y:e.y,vx:(Math.random()-.5)*120,vy:(Math.random()-.5)*120,t:0.9,size:3});
+      }
+    }
+
+    for(let i=minions.length-1;i>=0;i--){
+      const m=minions[i]; m.life-=dt; m.pulse=(m.pulse||0)+dt;
+      let target=null, td=1e9;
+      for(const e of enemies){ const d=dist(m,e); if(d<td){td=d;target=e} }
+      for(const b of bosses){ const d=dist(m,b); if(d<td){td=d;target=b} }
+      if(target){
+        steerToward(m, target.x, target.y, m.speed, dt);
+        if(dist(m,target)<m.r+target.r+4) applyDamage(target, m.dmg*dt, {noLS:true});
+      }
+      if(m.life<=0||m.hp<=0) minions.splice(i,1);
+    }
+
+    for(let i=zyns.length-1;i>=0;i--){
+      const z=zyns[i]; z.x+=z.vx*dt; z.y+=z.vy*dt; z.t-=dt;
+      if(dist(z,player)<player.r+10){ poisonTimer=Math.max(poisonTimer,5); poisonDps=12; sfx('poison'); toast('Poisoned by Zyn!'); zyns.splice(i,1); continue; }
+      if(z.t<=0||blocked(z.x,z.y,6)) zyns.splice(i,1);
+    }
+
+    for(const b of bosses){
+      bossMove(b,dt);
+      if(dist(player,b)<player.r+b.r){
+        let contact=16;
+        if(b.type==='final') contact=b.rage?32:26;
+        else if(b.type==='jake') contact=19;
+        else if(b.type==='stick') contact=b.rolling?28:20;
+        else if(b.type==='alekunder') contact=24;
+        else if(b.type==='faze') contact=b.rage?34:28;
+        else if(b.type==='bailey') contact=22;
+        else if(b.type==='vittala') contact=26;
+        else if(b.type==='eviljek') contact=b.rage?36:30;
+        else if(b.type==='hawking') contact=28;
+        else if(b.type==='epstein') contact=30;
+        else if(b.type==='omega') contact=b.rage?40:34;
+        hurt(contact*dt);
+      }
+      // Boss abilities (condensed)
+      if(b.type==='dictator'){ b.summon-=dt; if(b.summon<=0){ b.summon=3.6; for(let i=0;i<3;i++) spawnEnemy(b.x+(Math.random()-.5)*100,b.y+(Math.random()-.5)*100,'normal'); } }
+      else if(b.type==='jake'){ b.goldPulse=(b.goldPulse||0)+dt; b.stealTimer-=dt; if(b.stealTimer<=0){ b.stealTimer=4.2; if(dist(player,b)<200&&coins>0){ const s=Math.min(coins,8+Math.floor(Math.random()*7)); coins-=s; toast(`Jake stole ${s}!`); } } }
+      else if(b.type==='final'){ b.laser-=dt; if(b.laser<=0){ b.laser=b.rage?0.55:0.7; if(!segmentHitsWall(b.x,b.y,player.x,player.y)){ lasers.push({x:b.x,y:b.y,tx:player.x,ty:player.y,t:0.28}); hurt(b.rage?14:11); } } }
+      else if(b.type==='stick'){ b.jab-=dt; if(b.jab<=0&&!b.rolling){ b.jab=1; if(dist(player,b)<90) hurt(18); } b.roll-=dt; if(b.roll<=0&&!b.rolling){ b.roll=5.5; b.rolling=true; b.rollTime=0.85; const len=Math.hypot(player.x-b.x,player.y-b.y)||1; b.rollDx=(player.x-b.x)/len; b.rollDy=(player.y-b.y)/len; toast('THE STICK rolls!'); } }
+      else if(b.type==='alekunder'){ if(b.hp<b.maxHp) b.hp=Math.min(b.maxHp,b.hp+22*dt); b.slam-=dt; if(b.slam<=0){ b.slam=2.4; if(dist(player,b)<140) hurt(22); } }
+      else if(b.type==='faze'){ if(b.hp<b.maxHp*0.4) b.rage=true; b.laser-=dt; if(b.laser<=0){ b.laser=b.rage?0.5:0.75; if(!segmentHitsWall(b.x,b.y,player.x,player.y)){ lasers.push({x:b.x,y:b.y,tx:player.x,ty:player.y,t:0.3}); hurt(b.rage?16:12); } } b.clone-=dt; if(b.clone<=0){ b.clone=5; for(let i=0;i<2;i++) spawnEnemy(b.x+(Math.random()-.5)*120,b.y+(Math.random()-.5)*120,'fast'); } }
+      else if(b.type==='bailey'){ b.shot-=dt; if(b.shot<=0){ b.shot=1; if(!segmentHitsWall(b.x,b.y,player.x,player.y)){ lasers.push({x:b.x,y:b.y,tx:player.x,ty:player.y,t:0.2}); hurt(12); } } }
+      else if(b.type==='vittala'){ b.spin-=dt; if(b.spin<=0){ b.spin=2; if(dist(player,b)<150) hurt(22); } b.zyn-=dt; if(b.zyn<=0){ b.zyn=3.2; const ang=Math.atan2(player.y-b.y,player.x-b.x); zyns.push({x:b.x,y:b.y,vx:Math.cos(ang)*220,vy:Math.sin(ang)*220,t:2.5}); } }
+      else if(b.type==='eviljek'){
+        if(b.hp<b.maxHp*0.35) b.rage=true;
+        b.laser-=dt; if(b.laser<=0){ b.laser=b.rage?0.4:0.6; if(!segmentHitsWall(b.x,b.y,player.x,player.y)){ lasers.push({x:b.x,y:b.y,tx:player.x,ty:player.y,t:0.28}); hurt(b.rage?20:14); } }
+        b.teleport-=dt; if(b.teleport<=0){ b.teleport=b.rage?3.5:5.5; const ang=Math.random()*Math.PI*2; const nx=clamp(player.x+Math.cos(ang)*140,60,WORLD_W-60); const ny=clamp(player.y+Math.sin(ang)*140,60,WORLD_H-60); if(!blocked(nx,ny,b.r)){ b.x=nx; b.y=ny; toast('EvilJek teleported!'); } }
+        b.summon-=dt; if(b.summon<=0){ b.summon=7; if(!bosses.some(x=>x.type==='jake')){ const jp=findClearSpawn(42,b.x+100,b.y); bosses.push({type:'jake',name:'JAKE THE JEW',x:jp.x,y:jp.y,r:42,hp:600,maxHp:600,speed:78,goldPulse:0,stealTimer:3.5,summoned:true}); toast('Jake summoned!'); } for(let i=0;i<3;i++) spawnEnemy(b.x+(Math.random()-.5)*130,b.y+(Math.random()-.5)*130,'tank'); }
+      }
+      else if(b.type==='hawking'){
+        b.phase=b.hp<b.maxHp*0.5?2:1;
+        b.pulse-=dt; if(b.pulse<=0){ b.pulse=2.2; for(let i=0;i<16;i++){ const a=(i/16)*Math.PI*2; particles.push({x:b.x,y:b.y,vx:Math.cos(a)*200,vy:Math.sin(a)*200,t:0.7,size:6}); } if(dist(player,b)<180) hurt(25); shake=10; }
+      }
+      else if(b.type==='epstein'){
+        b.phase=b.hp<b.maxHp*0.5?2:1;
+        b.shadow-=dt; if(b.shadow<=0){ b.shadow=3; const ang=Math.random()*Math.PI*2; const nx=clamp(player.x+Math.cos(ang)*100,60,WORLD_W-60); const ny=clamp(player.y+Math.sin(ang)*100,60,WORLD_H-60); if(!blocked(nx,ny,b.r)){ b.x=nx; b.y=ny; } if(!segmentHitsWall(b.x,b.y,player.x,player.y)){ lasers.push({x:b.x,y:b.y,tx:player.x,ty:player.y,t:0.3}); hurt(16); } }
+      }
+      else if(b.type==='omega'){
+        b.phase=b.hp<b.maxHp*0.66? (b.hp<b.maxHp*0.33?3:2):1;
+        if(b.hp<b.maxHp*0.4) b.rage=true;
+        b.laser-=dt; if(b.laser<=0){ b.laser=b.rage?0.35:0.55; if(!segmentHitsWall(b.x,b.y,player.x,player.y)){ lasers.push({x:b.x,y:b.y,tx:player.x,ty:player.y,t:0.3}); hurt(b.rage?22:15); } }
+        b.beam-=dt; if(b.beam<=0){ b.beam=4; const ang=Math.atan2(player.y-b.y,player.x-b.x); beams.push({x:b.x,y:b.y,angle:ang,range:500,t:0.4,dmg:40,enemy:true}); if(dist(player,b)<500){ const d=Math.abs(Math.sin(ang-Math.atan2(player.y-b.y,player.x-b.x))); if(d<0.15) hurt(40); } }
+        b.summon-=dt; if(b.summon<=0){ b.summon=5; for(let i=0;i<4;i++) spawnEnemy(b.x+(Math.random()-.5)*150,b.y+(Math.random()-.5)*150,Math.random()<0.5?'ranger':'boomer'); }
+      }
+    }
+  }
+
+  for(let i=orbs.length-1;i>=0;i--){
+    const o=orbs[i];
+    if(magnetRange>0 && dist(player,o)<magnetRange){ const dx=player.x-o.x,dy=player.y-o.y,l=Math.hypot(dx,dy)||1; o.x+=dx/l*180*dt; o.y+=dy/l*180*dt; }
+    if(dist(player,o)<player.r+o.r){ orbs.splice(i,1); coins+=5; sfx('coin'); spawnOrb(); }
+  }
+
+  // Progressions
+  if(currentWorld==='main' && !freezeCombat){
+    if(kills>=12 && !dictatorDefeated && !bosses.some(b=>b.type==='dictator')) spawnDictator();
+    const d=bosses.find(b=>b.type==='dictator');
+    if(d&&d.hp<=0){ const dead={...d,isBoss:true,name:d.name}; bosses=bosses.filter(b=>b!==d); if(!dictatorDefeated){ dictatorDefeated=true; coins+=90; tryNecroRevive(dead); setTimeout(()=>{ if(!gameOver&&!won&&!jakeDefeated&&!bosses.some(b=>b.type==='jake')) spawnJake(); },1800); } }
+    const j=bosses.find(b=>b.type==='jake'&&!b.summoned);
+    if(j&&j.hp<=0){ const dead={...j,isBoss:true,name:j.name}; bosses=bosses.filter(b=>b!==j); tryNecroRevive(dead); if(!jakeDefeated){ jakeDefeated=true; coins+=120; updateShop(); toast('Challenge Key available!'); } }
+    if(challengeKeyBought&&!finalSpawned&&!won){ spawnFinal(); challengeKeyBought=false; updateShop(); }
+    const f=bosses.find(b=>b.type==='final');
+    if(f&&f.hp<=0){ const dead={...f,isBoss:true,name:f.name}; bosses=bosses.filter(b=>b!==f); if(!won){ won=true; coins+=250; sfx('win'); tryNecroRevive(dead); toast('Victory! Portal → MILO'); } }
+  }
+  if(currentWorld==='universe' && !universeWon){
+    if(kills>=8&&!stickDefeated&&!bosses.some(b=>b.type==='stick')&&uniBossIndex===0) spawnStick();
+    const st=bosses.find(b=>b.type==='stick');
+    if(st&&st.hp<=0){ const dead={...st,isBoss:true,name:st.name}; bosses=bosses.filter(b=>b!==st); tryNecroRevive(dead); if(!stickDefeated){ stickDefeated=true; coins+=100; setTimeout(()=>{ if(!gameOver&&!alekunderDefeated&&!bosses.some(b=>b.type==='alekunder')) spawnAlekunder(); },2000); } }
+    const al=bosses.find(b=>b.type==='alekunder');
+    if(al&&al.hp<=0){ const dead={...al,isBoss:true,name:al.name}; bosses=bosses.filter(b=>b!==al); tryNecroRevive(dead); if(!alekunderDefeated){ alekunderDefeated=true; coins+=140; setTimeout(()=>{ if(!gameOver&&!fazeDefeated&&!bosses.some(b=>b.type==='faze')) spawnFaze(); },2200); } }
+    const fz=bosses.find(b=>b.type==='faze');
+    if(fz&&fz.hp<=0){ const dead={...fz,isBoss:true,name:fz.name}; bosses=bosses.filter(b=>b!==fz); tryNecroRevive(dead); if(!fazeDefeated){ fazeDefeated=true; universeWon=true; coins+=300; sfx('win'); toast('MILO cleared! Portal → JAKE'); } }
+  }
+  if(currentWorld==='jake' && !jakeUniverseWon){
+    // Clean summoned Jake and necro-revive them
+    for(let i=bosses.length-1;i>=0;i--){
+      const b=bosses[i];
+      if(b.type==='jake'&&b.summoned&&b.hp<=0){ tryNecroRevive({...b,isBoss:true,name:b.name}); bosses.splice(i,1); }
+    }
+    if(kills>=8&&!baileyDefeated&&!bosses.some(b=>b.type==='bailey')&&jakeBossIndex===0) spawnBailey();
+    const ba=bosses.find(b=>b.type==='bailey');
+    if(ba&&ba.hp<=0){ const dead={...ba,isBoss:true,name:ba.name}; bosses=bosses.filter(b=>b!==ba); tryNecroRevive(dead); if(!baileyDefeated){ baileyDefeated=true; coins+=120; setTimeout(()=>{ if(!gameOver&&!vittalaDefeated&&!bosses.some(b=>b.type==='vittala')) spawnVittala(); },2000); } }
+    const vi=bosses.find(b=>b.type==='vittala');
+    if(vi&&vi.hp<=0){ const dead={...vi,isBoss:true,name:vi.name}; bosses=bosses.filter(b=>b!==vi); tryNecroRevive(dead); if(!vittalaDefeated){ vittalaDefeated=true; coins+=160; setTimeout(()=>{ if(!gameOver&&!eviljekDefeated&&!bosses.some(b=>b.type==='eviljek')) spawnEvilJek(); },2200); } }
+    const ej=bosses.find(b=>b.type==='eviljek');
+    if(ej&&ej.hp<=0){ const dead={...ej,isBoss:true,name:ej.name}; bosses=bosses.filter(b=>b!==ej); tryNecroRevive(dead); if(!eviljekDefeated){ eviljekDefeated=true; jakeUniverseWon=true; coins+=400; sfx('win'); toast('JAKE cleared! Portal → HYPER'); } }
+  }
+  if(currentWorld==='hyper' && !hyperWon){
+    if(kills>=8&&!hawkDefeated&&!bosses.some(b=>b.type==='hawking')&&hyperBossIndex===0) spawnHawking();
+    const hk=bosses.find(b=>b.type==='hawking');
+    if(hk&&hk.hp<=0){ const dead={...hk,isBoss:true,name:hk.name}; bosses=bosses.filter(b=>b!==hk); if(!hawkDefeated){ hawkDefeated=true; coins+=200; tryNecroRevive(dead); setTimeout(()=>{ if(!gameOver&&!epsteinDefeated&&!bosses.some(b=>b.type==='epstein')) spawnEpstein(); },2000); } }
+    const ep=bosses.find(b=>b.type==='epstein');
+    if(ep&&ep.hp<=0){ const dead={...ep,isBoss:true,name:ep.name}; bosses=bosses.filter(b=>b!==ep); if(!epsteinDefeated){ epsteinDefeated=true; coins+=250; tryNecroRevive(dead); setTimeout(()=>{ if(!gameOver&&!omegaDefeated&&!bosses.some(b=>b.type==='omega')) spawnOmega(); },2200); } }
+    const om=bosses.find(b=>b.type==='omega');
+    if(om&&om.hp<=0){ const dead={...om,isBoss:true,name:om.name,maxHp:om.maxHp}; bosses=bosses.filter(b=>b!==om); if(!omegaDefeated){ omegaDefeated=true; hyperWon=true; coins+=600; sfx('win'); tryNecroRevive(dead); toast('HYPER UNIVERSE CLEARED! OVERLORD defeated!'); } }
+  }
+
+  for(let i=particles.length-1;i>=0;i--){ const p=particles[i]; p.t-=dt; p.x+=(p.vx||0)*dt; p.y+=(p.vy||0)*dt; if(p.roar)p.r+=340*dt; if(p.t<=0)particles.splice(i,1); }
+  for(let i=lasers.length-1;i>=0;i--){ lasers[i].t-=dt; if(lasers[i].t<=0)lasers.splice(i,1); }
+  for(let i=slashes.length-1;i>=0;i--){ slashes[i].t-=dt; if(slashes[i].t<=0)slashes.splice(i,1); }
+  for(let i=beams.length-1;i>=0;i--){ beams[i].t-=dt; if(beams[i].t<=0)beams.splice(i,1); }
+  for(let i=floatTexts.length-1;i>=0;i--){ const f=floatTexts[i]; f.t-=dt; f.y+=f.vy*dt; if(f.t<=0) floatTexts.splice(i,1); }
+
+  draw(); updateUI();
+}
+
+function worldToScreen(x,y){ return {x:x-camX,y:y-camY}; }
+
+function draw(){
+  ctx.save();
+  if(shake) ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);
+  ctx.clearRect(-10,-10,VIEW_W+20,VIEW_H+20);
+  const worldCfg=WORLDS[currentWorld];
+  ctx.fillStyle=worldCfg.bg; ctx.fillRect(0,0,VIEW_W,VIEW_H);
+  ctx.strokeStyle=worldCfg.grid; ctx.lineWidth=1;
+  const grid=50, startX=Math.floor(camX/grid)*grid, startY=Math.floor(camY/grid)*grid;
+  for(let x=startX;x<camX+VIEW_W+grid;x+=grid){ const sx=x-camX; ctx.beginPath();ctx.moveTo(sx,0);ctx.lineTo(sx,VIEW_H);ctx.stroke(); }
+  for(let y=startY;y<camY+VIEW_H+grid;y+=grid){ const sy=y-camY; ctx.beginPath();ctx.moveTo(0,sy);ctx.lineTo(VIEW_W,sy);ctx.stroke(); }
+  if(currentWorld==='hyper'){ ctx.fillStyle='rgba(120,40,200,0.06)'; ctx.fillRect(0,0,VIEW_W,VIEW_H); }
+
+  for(const o of obstacles){
+    const s=worldToScreen(o.x,o.y);
+    if(s.x+o.w<-20||s.y+o.h<-20||s.x>VIEW_W+20||s.y>VIEW_H+20) continue;
+    let fill='#3a4760';
+    if(currentWorld==='universe') fill='#3a2a55';
+    if(currentWorld==='jake') fill='#4a3820';
+    if(currentWorld==='hyper') fill='#2a1840';
+    ctx.fillStyle=o.solid?fill:'#151e2a';
+    ctx.fillRect(s.x,s.y,o.w,o.h);
+    ctx.strokeStyle=o.breakable?'#d4a03a':'#5a6a82';
+    ctx.lineWidth=2; ctx.strokeRect(s.x,s.y,o.w,o.h);
+    if(o.breakable&&o.solid){ ctx.fillStyle='#e8b44a'; ctx.fillRect(s.x,s.y-6,o.w*Math.max(0,o.hp/180),4); }
+  }
+
+  if(shrine){
+    const s=worldToScreen(shrine.x,shrine.y);
+    ctx.fillStyle=shrine.used?'rgba(80,80,80,0.5)':'rgba(180,60,255,0.35)';
+    ctx.beginPath();ctx.arc(s.x,s.y,shrine.r+10,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=shrine.used?'#666':'#c060ff';
+    ctx.beginPath();ctx.arc(s.x,s.y,shrine.r,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#fff'; ctx.font='bold 11px Arial'; ctx.textAlign='center';
+    ctx.fillText(shrine.used?'NECRO UNLOCKED':'NECRO SHRINE',s.x,s.y-shrine.r-12);
+    if(!shrine.used) ctx.fillText('1000 🪙',s.x,s.y+4);
+  }
+
+  if(portal){
+    const s=worldToScreen(portal.x,portal.y);
+    const pulse=0.6+0.4*Math.sin(performance.now()/200);
+    const col=portal.dest==='hyper'?'180,80,255':portal.dest==='jake'?'255,180,60':'140,80,255';
+    ctx.fillStyle=`rgba(${col},${0.25+pulse*0.25})`;
+    ctx.beginPath();ctx.arc(s.x,s.y,portal.r+12,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=portal.dest==='hyper'?'#b050ff':portal.dest==='jake'?'#ffb43c':'#9b5cff';
+    ctx.beginPath();ctx.arc(s.x,s.y,portal.r,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#fff'; ctx.font='bold 11px Arial'; ctx.textAlign='center';
+    ctx.fillText(portal.label,s.x,s.y-portal.r-10);
+  }
+
+  for(const o of orbs){ const s=worldToScreen(o.x,o.y); ctx.fillStyle='#55ffb0'; ctx.beginPath();ctx.arc(s.x,s.y,8,0,Math.PI*2);ctx.fill(); }
+
+  for(const e of enemies){
+    const s=worldToScreen(e.x,e.y);
+    if(s.x<-30||s.y<-30||s.x>VIEW_W+30||s.y>VIEW_H+30) continue;
+    ctx.fillStyle=e.type==='fast'?'#ff6b8a':e.type==='tank'?'#8b3a4a':e.type==='ranger'?'#5bc0ff':e.type==='boomer'?'#ff9a3c':'#d94b62';
+    ctx.beginPath();ctx.arc(s.x,s.y,e.r,0,Math.PI*2);ctx.fill();
+    if(e.type==='boomer'){ ctx.strokeStyle='#ffcc00'; ctx.lineWidth=2; ctx.beginPath();ctx.arc(s.x,s.y,e.r+3,0,Math.PI*2);ctx.stroke(); }
+    ctx.fillStyle='#222'; ctx.fillRect(s.x-e.r,s.y-e.r-7,e.r*2,3);
+    ctx.fillStyle='#ff7070'; ctx.fillRect(s.x-e.r,s.y-e.r-7,e.r*2*(e.hp/e.maxHp),3);
+  }
+
+  for(const m of minions){
+    const s=worldToScreen(m.x,m.y);
+    const pulse=0.5+0.5*Math.sin((m.pulse||0)*6);
+    const isNecro=!!m.necro;
+    ctx.fillStyle=isNecro?`rgba(180,60,255,${0.25+pulse*0.25})`:`rgba(80,200,255,${0.2+pulse*0.2})`;
+    ctx.beginPath();ctx.arc(s.x,s.y,m.r+6,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=isNecro?'#b050ff':'#4dd0ff';
+    ctx.beginPath();ctx.arc(s.x,s.y,m.r,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle=isNecro?'#e8c0ff':'#e0f7ff'; ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(s.x,s.y,m.r+2,0,Math.PI*2);ctx.stroke();
+    ctx.fillStyle='#fff'; ctx.beginPath();ctx.arc(s.x-3,s.y-2,2,0,Math.PI*2);ctx.arc(s.x+3,s.y-2,2,0,Math.PI*2);ctx.fill();
+    if(m.name){ ctx.fillStyle='#e0a0ff'; ctx.font='bold 9px Arial'; ctx.textAlign='center'; ctx.fillText(m.name,s.x,s.y-m.r-6); }
+  }
+
+  for(const z of zyns){
+    const s=worldToScreen(z.x,z.y);
+    ctx.fillStyle='#3d8b37'; ctx.fillRect(s.x-6,s.y-8,12,16);
+    ctx.fillStyle='#c4ff9a'; ctx.font='bold 9px Arial'; ctx.textAlign='center'; ctx.fillText('ZYN',s.x,s.y+3);
+  }
+
+  for(const b of bosses){
+    const s=worldToScreen(b.x,b.y);
+    if(b.type==='jake') ctx.fillStyle='#c9a227';
+    else if(b.type==='final') ctx.fillStyle=b.rage?'#a020f0':'#7b39d6';
+    else if(b.type==='stick') ctx.fillStyle=b.rolling?'#d4a574':'#8b7355';
+    else if(b.type==='alekunder') ctx.fillStyle='#2a6a4a';
+    else if(b.type==='faze') ctx.fillStyle=b.rage?'#ff2090':'#c02070';
+    else if(b.type==='bailey') ctx.fillStyle='#4a90c8';
+    else if(b.type==='vittala') ctx.fillStyle='#c87820';
+    else if(b.type==='eviljek') ctx.fillStyle=b.rage?'#ff2020':'#8b0000';
+    else if(b.type==='hawking') ctx.fillStyle='#6a4cff';
+    else if(b.type==='epstein') ctx.fillStyle='#2a2a3a';
+    else if(b.type==='omega') ctx.fillStyle=b.rage?'#ff00aa':'#8b00ff';
+    else ctx.fillStyle='#a83232';
+    ctx.beginPath();ctx.arc(s.x,s.y,b.r,0,Math.PI*2);ctx.fill();
+    if(b.rolling){ ctx.strokeStyle='#fff'; ctx.lineWidth=3; ctx.beginPath();ctx.arc(s.x,s.y,b.r+6,0,Math.PI*2);ctx.stroke(); }
+    if(b.type==='omega'){ ctx.strokeStyle='#ff66cc'; ctx.lineWidth=3; ctx.beginPath();ctx.arc(s.x,s.y,b.r+8,0,Math.PI*2);ctx.stroke(); }
+  }
+
+  // Arcade boss HP banner (top center)
+  if(bosses.length>0){
+    const b=bosses[0];
+    const bw=420, bx=(VIEW_W-bw)/2, by=8;
+    ctx.fillStyle='rgba(0,0,0,0.7)'; ctx.fillRect(bx,by,bw,36);
+    ctx.strokeStyle='#666'; ctx.strokeRect(bx,by,bw,36);
+    ctx.fillStyle='#fff'; ctx.font='bold 13px Arial'; ctx.textAlign='center';
+    const phase=b.phase?` · PHASE ${b.phase}`:(b.rage?' · RAGE':'');
+    ctx.fillText(`${b.name}${phase}`, VIEW_W/2, by+14);
+    ctx.fillStyle='#222'; ctx.fillRect(bx+8,by+20,bw-16,10);
+    const pct=Math.max(0,b.hp/b.maxHp);
+    ctx.fillStyle=b.rage?'#ff2090':'#ff5252';
+    ctx.fillRect(bx+8,by+20,(bw-16)*pct,10);
+    ctx.fillStyle='#eee'; ctx.font='11px Arial';
+    ctx.fillText(`${Math.ceil(b.hp)} / ${b.maxHp}`, VIEW_W/2, by+29);
+  }
+
+  for(const l of lasers){
+    const s1=worldToScreen(l.x,l.y), s2=worldToScreen(l.tx,l.ty);
+    ctx.strokeStyle=l.plasma?'#5bc0ff':'#ff334f'; ctx.lineWidth=l.plasma?3:5;
+    ctx.globalAlpha=Math.max(0,l.t*4);
+    ctx.beginPath();ctx.moveTo(s1.x,s1.y);ctx.lineTo(s2.x,s2.y);ctx.stroke(); ctx.globalAlpha=1;
+  }
+  for(const sl of slashes){
+    const s=worldToScreen(sl.x,sl.y);
+    ctx.globalAlpha=Math.max(0,sl.t*3);
+    ctx.strokeStyle='#7ef9ff'; ctx.lineWidth=8;
+    ctx.beginPath();ctx.arc(s.x,s.y,sl.range,sl.angle-1.1,sl.angle+1.1);ctx.stroke();
+    ctx.globalAlpha=1;
+  }
+  for(const bm of beams){
+    const s=worldToScreen(bm.x,bm.y);
+    const ex=s.x+Math.cos(bm.angle)*bm.range;
+    const ey=s.y+Math.sin(bm.angle)*bm.range;
+    ctx.globalAlpha=Math.max(0,bm.t*3);
+    ctx.strokeStyle=bm.enemy?'#ff00aa':'#c060ff';
+    ctx.lineWidth=10;
+    ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(ex,ey);ctx.stroke();
+    ctx.strokeStyle='#fff'; ctx.lineWidth=3;
+    ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(ex,ey);ctx.stroke();
+    ctx.globalAlpha=1;
+  }
+
+  const ps=worldToScreen(player.x,player.y);
+  if(player.shield>0){ ctx.strokeStyle='#5bbcff'; ctx.lineWidth=5; ctx.beginPath();ctx.arc(ps.x,ps.y,player.r+8,0,Math.PI*2);ctx.stroke(); }
+  ctx.fillStyle=player.color||'#f1c84b'; ctx.beginPath();ctx.arc(ps.x,ps.y,player.r,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#222'; ctx.beginPath();ctx.arc(ps.x-6,ps.y-3,3.2,0,Math.PI*2);ctx.arc(ps.x+6,ps.y-3,3.2,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#fff'; ctx.font='bold 11px Arial'; ctx.textAlign='center';
+  ctx.fillText(player.name||'Charlie',ps.x,ps.y-player.r-8);
+
+  for(const o of (mpOthers||[])){
+    if(!o) continue;
+    const os=worldToScreen(o.renderX??o.x,o.renderY??o.y);
+    ctx.fillStyle=o.color||'#7ec8ff';
+    ctx.beginPath();ctx.arc(os.x,os.y,o.r||19,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#222'; ctx.beginPath();ctx.arc(os.x-6,os.y-3,3.2,0,Math.PI*2);ctx.arc(os.x+6,os.y-3,3.2,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#fff'; ctx.font='bold 11px Arial'; ctx.textAlign='center';
+    ctx.fillText(o.name||('P'+(o.slot+1)), os.x, os.y-(o.r||19)-8);
+    ctx.fillStyle='#222'; ctx.fillRect(os.x-(o.r||19), os.y+(o.r||19)+4, (o.r||19)*2, 4);
+    ctx.fillStyle=o.color||'#5bc0ff';
+    ctx.fillRect(os.x-(o.r||19), os.y+(o.r||19)+4, (o.r||19)*2*Math.max(0,o.hp/(o.maxHp||1)), 4);
+  }
+
+  for(const p of particles){
+    const s=worldToScreen(p.x,p.y);
+    ctx.globalAlpha=Math.max(0,p.t);
+    ctx.fillStyle=p.roar?'#eaffff':'#dce6f5';
+    ctx.beginPath();ctx.arc(s.x,s.y,p.roar?p.r:(p.size||4),0,Math.PI*2);ctx.fill();
+    ctx.globalAlpha=1;
+  }
+
+  // Floating damage text
+  for(const f of floatTexts){
+    const s=worldToScreen(f.x,f.y);
+    ctx.globalAlpha=Math.max(0,f.t);
+    ctx.fillStyle=f.color; ctx.font=`bold ${f.size}px Arial`; ctx.textAlign='center';
+    ctx.fillText(f.text, s.x, s.y);
+    ctx.globalAlpha=1;
+  }
+
+  // Minimap
+  const mmW=140, mmH=90, mmX=VIEW_W-mmW-10, mmY=VIEW_H-mmH-10;
+  ctx.fillStyle='rgba(10,14,22,0.8)'; ctx.fillRect(mmX,mmY,mmW,mmH);
+  ctx.strokeStyle='#3a4a66'; ctx.strokeRect(mmX,mmY,mmW,mmH);
+  const sx=mmW/WORLD_W, sy=mmH/WORLD_H;
+  ctx.fillStyle='#f1c84b'; ctx.beginPath();ctx.arc(mmX+player.x*sx,mmY+player.y*sy,3,0,Math.PI*2);ctx.fill();
+  for(const e of enemies){ ctx.fillStyle='#d94b62'; ctx.fillRect(mmX+e.x*sx-1.5,mmY+e.y*sy-1.5,3,3); }
+  for(const b of bosses){ ctx.fillStyle='#ff5555'; ctx.beginPath();ctx.arc(mmX+b.x*sx,mmY+b.y*sy,4,0,Math.PI*2);ctx.fill(); }
+  if(shrine&&!shrine.used){ ctx.fillStyle='#c060ff'; ctx.beginPath();ctx.arc(mmX+shrine.x*sx,mmY+shrine.y*sy,3,0,Math.PI*2);ctx.fill(); }
+
+  if(!gameOver && player.hp < player.maxHp*0.3){
+    const pulse=0.15+0.1*Math.sin(performance.now()/200);
+    ctx.fillStyle=`rgba(180,20,20,${pulse})`; ctx.fillRect(0,0,VIEW_W,VIEW_H);
+  }
+  if(gameOver){
+    ctx.fillStyle='rgba(0,0,0,0.72)'; ctx.fillRect(0,0,VIEW_W,VIEW_H);
+    ctx.textAlign='center'; ctx.fillStyle='#fff'; ctx.font='bold 42px Arial';
+    ctx.fillText('CHARLIE GOT MONSTERED!',VIEW_W/2,VIEW_H/2-20);
+    ctx.font='20px Arial'; ctx.fillText('Press Restart',VIEW_W/2,VIEW_H/2+30);
+  } else if(won && currentWorld==='main'){
+    ctx.fillStyle='rgba(0,0,0,0.3)'; ctx.fillRect(0,0,VIEW_W,VIEW_H);
+    ctx.textAlign='center'; ctx.fillStyle='#c9a0ff'; ctx.font='bold 22px Arial';
+    ctx.fillText('FILIP A DEFEATED — Enter the portal!',VIEW_W/2,50);
+  } else if(universeWon && currentWorld==='universe'){
+    ctx.fillStyle='rgba(40,10,60,0.4)'; ctx.fillRect(0,0,VIEW_W,36);
+    ctx.textAlign='center'; ctx.fillStyle='#e0a0ff'; ctx.font='bold 14px Arial';
+    ctx.fillText('MILO CLEARED — Portal → JAKE UNIVERSE',VIEW_W/2,24);
+  } else if(jakeUniverseWon && currentWorld==='jake'){
+    ctx.fillStyle='rgba(60,40,10,0.45)'; ctx.fillRect(0,0,VIEW_W,36);
+    ctx.textAlign='center'; ctx.fillStyle='#ffd700'; ctx.font='bold 14px Arial';
+    ctx.fillText('JAKE CLEARED — Portal → HYPER UNIVERSE',VIEW_W/2,24);
+  } else if(hyperWon){
+    ctx.fillStyle='rgba(40,10,60,0.5)'; ctx.fillRect(0,0,VIEW_W,40);
+    ctx.textAlign='center'; ctx.fillStyle='#e0a0ff'; ctx.font='bold 15px Arial';
+    ctx.fillText('HYPER UNIVERSE CLEARED — OVERLORD OMEGA YAHU defeated!',VIEW_W/2,26);
+  }
+  ctx.restore();
+}
+
+function buy(type){
+  const p=prices[type];
+  if(coins < p){ toast(`Need ${p} coins`); return; }
+  if(type==='key'){
+    if(!jakeDefeated){ toast('Defeat JAKE first!'); return; }
+    if(finalSpawned||won){ toast('Already fought'); return; }
+    coins-=p; challengeKeyBought=true; sfx('buy'); toast('Key purchased!'); updateShop(); return;
+  }
+  coins-=p; sfx('buy');
+  if(type==='speed') player.speed+=24;
+  if(type==='power'){ roarPower+=18; toast(`Roar → ${roarPower}`); }
+  if(type==='cd') coolMax=Math.max(0.65,coolMax-0.32);
+  if(type==='shield') player.shield+=32;
+  if(type==='maxhp'){ player.maxHp+=25; player.hp+=25; }
+  if(type==='range') roarRangeBonus+=28;
+  if(type==='magnet'){ magnetRange=magnetRange===0?110:magnetRange+40; }
+  if(type==='armor') dmgReduce=Math.min(0.35,dmgReduce+0.08);
+  if(type==='slashDmg'){ slashPower+=0.35; }
+  if(type==='slashCdUp'){ slashCdMax=Math.max(1.8,slashCdMax-0.45); }
+  if(type==='slashRange') slashRangeBonus+=22;
+  if(type==='minionCount'){ minionCount+=1; toast(`Minions → ${minionCount}`); }
+  if(type==='minionDmg'){ minionDmg+=15; toast(`Minion dmg → ${minionDmg}`); }
+  if(type==='minionCdUp'){ minionCdMax=Math.max(2.5,minionCdMax-0.9); }
+  if(type==='hyperDmg'){ hyperPower+=0.4; toast(`Hyper power ×${hyperPower.toFixed(1)}`); }
+  if(type==='hyperCdUp'){ hyperCdMax=Math.max(2,hyperCdMax-0.6); toast(`Hyper CD → ${hyperCdMax.toFixed(1)}s`); }
+  prices[type]=Math.ceil(p*1.32);
+  updateShop();
+}
+
+function updateShop(){
+  const labels={
+    speed:'⚡ Speed +24', power:'📢 Roar Power +18', cd:'⏱ Shorter Roar CD',
+    shield:'🛡 Shield +32', maxhp:'♥️ Max HP +25', range:'📡 Roar Range +', magnet:'🧲 Coin Magnet',
+    armor:'🪨 Armor', key:'🔑 Challenge Key',
+    slashDmg:'⚔️ Slash Damage +', slashCdUp:'⚔️ Faster Slash CD', slashRange:'⚔️ Slash Range +',
+    minionCount:'👾 +1 Minion', minionDmg:'👾 Minion Damage +', minionCdUp:'👾 Faster Minion CD',
+    hyperDmg:'⚡ Hyper Beam Damage +', hyperCdUp:'⚡ Faster Hyper CD'
+  };
+  const div=document.getElementById('shopItems'); div.innerHTML='';
+  let order;
+  if(currentWorld==='hyper') order=['speed','power','cd','shield','maxhp','range','magnet','armor','slashDmg','slashCdUp','slashRange','minionCount','minionDmg','minionCdUp','hyperDmg','hyperCdUp'];
+  else if(currentWorld==='jake') order=['speed','power','cd','shield','maxhp','range','magnet','armor','slashDmg','slashCdUp','slashRange','minionCount','minionDmg','minionCdUp'];
+  else if(currentWorld==='universe') order=['speed','power','cd','shield','maxhp','range','magnet','armor','slashDmg','slashCdUp','slashRange'];
+  else order=['speed','power','cd','shield','maxhp','range','magnet','armor','key'];
+  for(const k of order){
+    if(prices[k]===undefined) continue;
+    if(k==='key' && (!jakeDefeated||finalSpawned||won||currentWorld!=='main')) continue;
+    const b=document.createElement('button');
+    b.textContent=`${labels[k]} — ${prices[k]} 🪙`;
+    b.onclick=()=>buy(k);
+    b.disabled=coins<prices[k];
+    div.appendChild(b);
+  }
+  document.getElementById('shopSub').textContent=`${WORLDS[currentWorld].name} · Coins: ${coins} · E=Heal · Game paused`;
+}
+
+function updateUI(){
+  const hud=document.getElementById('hudStats');
+  if(hud){hud.style.display='block';hud.style.visibility='visible';}
+  if(!player) return;
+  const boss=bosses[0];
+  let extra=boss?` | ${boss.name} ${Math.ceil(boss.hp)}`:'';
+  let slashInfo=slashUnlocked?` | ⚔️ ${slashCd>0?slashCd.toFixed(1)+'s':'READY'}`:'';
+  let healInfo=` | 💚 ${healCd>0?healCd.toFixed(0)+'s':'HEAL'}`;
+  let minionInfo=minionUnlocked?` | 👾 ${minionCd>0?minionCd.toFixed(1)+'s':'SUMMON'}`:'';
+  let hyperInfo=hyperUnlocked?` | ⚡ ${hyperCd>0?hyperCd.toFixed(1)+'s':'BEAM'}`:'';
+  let poisonInfo=poisonTimer>0?` | ☠️ ${poisonTimer.toFixed(1)}s`:'';
+  let necroInfo=necroActive?' | 💀 NECRO':'';
+  let allies='';
+  for(const o of (mpOthers||[])){
+    if(o) allies+=`<br>${o.name||'P?'} HP ${Math.ceil(o.hp)}/${Math.ceil(o.maxHp||60)}`;
+  }
+  let modeTag=gameMode==='host'?` · CO-OP HOST ${lobbyCount()}/${MAX_PLAYERS}`:gameMode==='client'?` · CO-OP P${(localClientId||0)+1}`:'';
+  document.getElementById('hudStats').innerHTML=
+    `<b>${WORLDS[currentWorld].tag}${modeTag}</b><br>`+
+    `HP ${Math.ceil(player.hp)}/${player.maxHp} &nbsp; 🛡 ${Math.ceil(player.shield)} &nbsp; 🪙 ${coins}${allies}<br>`+
+    `☠ ${kills} &nbsp; 📢 ${cooldown>0?cooldown.toFixed(1)+'s':'READY'} &nbsp; 💪${roarPower}${slashInfo}${healInfo}${minionInfo}${hyperInfo}${poisonInfo}${necroInfo}${extra}`;
+}
+
+document.getElementById('restart').onclick=()=>{
+  if(gameMode==='menu') return;
+  if(gameMode==='host'||gameMode==='client'){ showMenu(); return; }
+  reset();
+};
+// Boot into main menu (solo starts via button)
+showMenu();
+function loop(t){
+  const dt=Math.min(0.033,(t-last)/1000); last=t;
+  try{ update(dt); }catch(err){ console.error('update error', err); }
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
