@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Charlie MONSTER — Rebuilt</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#090b12;color:#eee;font-family:Arial,sans-serif;display:flex;justify-content:center}
+#wrap{width:min(100%,1100px);padding:14px;position:relative}
+h1{margin:0 0 8px;font-size:26px}
+#bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:#151a25;border:1px solid #2b3445;border-radius:10px;padding:8px 12px;margin-bottom:8px}
+button,input{font:inherit}button{background:#222b3b;color:#fff;border:1px solid #46546c;border-radius:7px;padding:8px 11px;cursor:pointer}button:hover{background:#303b50}button:disabled{opacity:.45;cursor:not-allowed}
+.small{font-size:12px;color:#aeb8c9}
+#controls{flex:1}
+#gameWrap{position:relative;width:100%}
+canvas{width:100%;height:auto;display:block;background:#101722;border:2px solid #303a4c;border-radius:10px;cursor:crosshair}
+#hud{position:absolute;left:12px;top:12px;right:12px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;pointer-events:none;z-index:5}
+#hudStats{background:rgba(10,14,22,.84);border:1px solid #3a4a66;border-radius:8px;padding:8px 12px;font-size:13px;line-height:1.45;max-width:78%}
+#hudBtns{display:flex;gap:8px;pointer-events:auto}
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a2233;border:1px solid #3a4a66;padding:10px 18px;border-radius:8px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:50;font-size:14px}
+.overlay{display:none;position:absolute;inset:0;background:rgba(0,0,0,.68);z-index:20;align-items:center;justify-content:center;border-radius:10px}.overlay.open{display:flex}
+.panel{background:#151a25;border:1px solid #3a4a66;border-radius:12px;padding:20px;width:min(520px,92%);max-height:88%;overflow:auto;box-shadow:0 16px 45px rgba(0,0,0,.5)}
+.panel h2{margin:0 0 7px}.sub{font-size:12px;color:#aeb8c9;margin-bottom:12px}
+.list{display:flex;flex-direction:column;gap:8px}.list button{text-align:left;width:100%}
+#shopItems{display:flex;flex-direction:column;gap:8px}#shopItems button{text-align:left;width:100%}
+#modItems{display:flex;flex-direction:column;gap:8px}#modItems button{text-align:left;width:100%}
+#menuOverlay{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 28%,#1a1030 0%,#090b12 72%);z-index:40;display:flex;align-items:center;justify-content:center;border-radius:10px}
+#menuPanel{text-align:center;width:min(470px,92%);padding:28px 24px}
+#menuPanel h2{font-size:38px;margin:0 0 5px;background:linear-gradient(90deg,#f1c84b,#ff6b8a,#9b5cff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.tagline{color:#aeb8c9;font-size:13px;margin-bottom:22px}.menuBtns{display:flex;flex-direction:column;gap:10px}.menuBtns button{font-size:16px;padding:12px 16px}.menuBtns .primary{background:#3a2a70;border-color:#7a5ab0}.menuBtns .primary:hover{background:#4a3a85}
+#lobbyBox,#customBox{display:none}.roomRow{display:flex;gap:8px}.roomRow input{flex:1}
+input{width:100%;padding:10px 12px;border-radius:7px;border:1px solid #46546c;background:#0e1420;color:#eee}
+.colorRow{display:flex;gap:10px;align-items:center;margin:10px 0}.colorRow input{width:64px;height:42px;padding:3px}
+#roomCode{font-size:28px;letter-spacing:5px;font-weight:700;margin:8px 0;color:#d4b0ff}
+#status{min-height:22px;color:#cda9ff;margin-top:10px;font-size:13px}
+#death{display:none;position:absolute;inset:0;z-index:15;align-items:center;justify-content:center;background:rgba(0,0,0,.65);text-align:center;border-radius:10px}.deathCard{background:#151a25;border:1px solid #3a4a66;border-radius:12px;padding:25px;width:min(430px,88%)}
+#mobileHint{display:none}
+@media(max-width:700px){#controls{display:none}#mobileHint{display:block}}
+</style>
+</head>
+<body>
+<div id="wrap">
+<h1 id="title">🟢 Charlie MONSTER</h1>
+<div id="bar"><span id="controls" class="small">WASD · SPACE roar · E heal · F slash · R minions · Q hyper beam · Shop · M mods</span><span id="mobileHint" class="small">Keyboard recommended</span><button id="restart">Restart</button><button id="menuBtn">🏠 Menu</button></div>
+<div id="gameWrap">
+<canvas id="game" width="1100" height="650"></canvas>
+<div id="hud"><div id="hudStats"></div><div id="hudBtns"><button id="shopBtn">🛒 Shop</button><button id="modBtn" style="display:none">🔧 Mods</button></div></div>
+<div id="toast"></div>
+
+<div id="menuOverlay"><div id="menuPanel">
+  <h2>Charlie MONSTER</h2>
+  <div class="tagline">A clean rebuild of the same 2D monster game · 4-player online co-op</div>
+  <div id="menuMain" class="menuBtns">
+    <button class="primary" id="playSolo">▶ Play Solo</button>
+    <button id="createRoom">🌐 Create Room</button>
+    <button id="joinRoom">🔗 Join Room</button>
+    <button id="customize">🎨 CUSTOMIZE</button>
+  </div>
+  <div id="lobbyBox">
+    <div id="lobbyTitle" style="font-size:15px;margin-bottom:6px"></div>
+    <div id="roomCode"></div>
+    <div class="sub">Share this room code with your friends.</div>
+    <div class="roomRow"><input id="joinInput" maxlength="6" placeholder="ROOM CODE"><button id="joinGo">Join</button></div>
+    <div id="lobbyActions" style="display:flex;gap:8px;margin-top:10px"><button id="startGame" class="primary" style="flex:1">▶ Start Game</button><button id="lobbyBack" style="flex:1">Back</button></div>
+    <div id="status"></div>
+  </div>
+  <div id="customBox">
+    <div class="sub">Change the name and color that other players see.</div>
+    <input id="nameInput" maxlength="16" placeholder="Player name">
+    <div class="colorRow"><input id="colorInput" type="color"><span id="colorText" class="small"></span></div>
+    <div style="display:flex;gap:8px"><button id="saveCustomize" class="primary" style="flex:1">Save</button><button id="customBack" style="flex:1">Back</button></div>
+  </div>
+</div></div>
+
+<div id="shopOverlay" class="overlay"><div class="panel"><h2>🛒 Shop</h2><div class="sub" id="shopSub">Upgrades · game keeps running</div><div id="shopItems"></div><button id="shopClose" style="margin-top:12px;width:100%">Close Shop</button></div></div>
+<div id="modOverlay" class="overlay"><div class="panel"><h2>🔧 Mod Panel</h2><div class="sub" id="modSub">Enter code 0912 to unlock mods.</div><div id="modUnlock"><div class="roomRow"><input id="modCode" type="password" maxlength="8" placeholder="Code"><button id="modSubmit">Unlock</button></div></div><div id="modItems" style="display:none;margin-top:10px"></div><button id="modClose" style="margin-top:12px;width:100%">Close</button></div></div>
+<div id="death"><div class="deathCard"><h2>You got monstered!</h2><p id="deathText" class="sub">All players are down.</p><button id="deathRestart" class="primary">Back to Menu</button></div></div>
+</div>
+<div id="hint" class="small">Main → MILO → JAKE → HYPER. Secret shrine in JAKE (1000 coins) unlocks Necro Revive.</div>
+</div>
+<script>
+const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
+const VW=canvas.width,VH=canvas.height;
+const COLORS=['#f1c84b','#7ec8ff','#ff7eb9','#7effa0'];
+const WORLDS={main:{w:2200,h:1400,bg:'#0c121c',grid:'#152032',tag:'🟢 MAIN'},universe:{w:2600,h:1600,bg:'#0a0e1a',grid:'#1a1030',tag:'🌌 MILO UNIVERSE'},jake:{w:2800,h:1700,bg:'#120c08',grid:'#2a2010',tag:'💰 JAKE UNIVERSE'},hyper:{w:3000,h:1800,bg:'#0a0614',grid:'#1a0a28',tag:'⚡ HYPER UNIVERSE'}};
+let ws=null,connected=false,mode='menu',roomCode='',isHost=false,started=false,localId=null,localSlot=0,seq=0,lastSend=0,lastFrame=performance.now(),pendingConnectMessage=null;
+let state=null,predicted=null,pendingInputs=[];let mouse={x:VW/2,y:VH/2};let keys={};let renderPlayers=new Map(),fx=[];let seenFx=new Set();
+let shopOpen=false,modOpen=false,modUnlocked=localStorage.getItem('cm_mod')==='1';
+let profile={name:localStorage.getItem('cm_name')||'Charlie',color:localStorage.getItem('cm_color')||COLORS[0]};
+
+function toast(t){const el=document.getElementById('toast');el.textContent=t;el.style.opacity='1';clearTimeout(el._tm);el._tm=setTimeout(()=>el.style.opacity='0',2200)}
+function setMenu(msg){document.getElementById('status').textContent=msg||''}
+function send(obj){if(ws&&ws.readyState===1)ws.send(JSON.stringify(obj))}
+function connect(message=null){
+  if(message) pendingConnectMessage=message;
+  if(location.protocol==='file:'){
+    mode='menu';
+    setMenu('Open the game through the Node server (http://localhost:3000 or your Render link).');
+    toast('The multiplayer server is not running');
+    return;
+  }
+  if(ws&&ws.readyState===WebSocket.OPEN){
+    if(pendingConnectMessage){const m=pendingConnectMessage;pendingConnectMessage=null;ws.send(JSON.stringify(m));}
+    return;
+  }
+  if(ws&&ws.readyState===WebSocket.CONNECTING) return;
+  connected=false;
+  const proto=location.protocol==='https:'?'wss':'ws';
+  const url=`${proto}://${location.host}`;
+  setMenu('Connecting to multiplayer server…');
+  try{ ws=new WebSocket(url); }catch(err){
+    ws=null; mode='menu'; setMenu('Could not connect to the multiplayer server.'); toast('Could not connect'); return;
+  }
+  ws.onopen=()=>{
+    connected=true;
+    setMenu('Connected — creating room…');
+    if(pendingConnectMessage){const m=pendingConnectMessage;pendingConnectMessage=null;ws.send(JSON.stringify(m));}
+  };
+  ws.onclose=()=>{
+    connected=false;
+    if(mode==='lobby'){setMenu('Connection closed. Check that the server is running.');toast('Server connection closed');}
+    else if(mode!=='menu'){toast('Connection lost');showMenu();}
+  };
+  ws.onerror=()=>{
+    connected=false;
+    if(mode==='lobby')setMenu('Unable to reach the multiplayer server.');
+  };
+  ws.onmessage=e=>{
+    try{handleMessage(JSON.parse(e.data));}
+    catch(err){console.error('Bad server message',err,e.data);}
+  };
+}
+function handleMessage(msg){
+  if(msg.t==='joined'){localId=msg.id;localSlot=msg.slot;roomCode=msg.code;isHost=!!msg.host;started=!!msg.started;send({t:'profile',name:profile.name,color:profile.color});if(!started)showLobby();return;}
+  if(msg.t==='room'){roomCode=msg.code;isHost=msg.role==='host';started=!!msg.started;showLobby();if(started)hideMenu();return;}
+  if(msg.t==='started'){started=true;hideMenu();toast('Game started!');return;}
+  if(msg.t==='host'){isHost=true;toast('You are now the room host');return;}
+  if(msg.t==='lobby'){if(mode==='lobby')setMenu(`${msg.count}/${msg.max} players connected${isHost?' — you can start anytime.':' — waiting for host.'}`);return;}
+  if(msg.t==='error'){setMenu(msg.message);toast(msg.message);return;}
+  if(msg.t==='state'){applyState(msg.state);}
+}
+function disconnectRoom(){if(ws){try{ws.close()}catch{}}ws=null;connected=false;pendingConnectMessage=null;roomCode='';isHost=false;started=false;localId=null;state=null;predicted=null;pendingInputs=[];renderPlayers.clear();fx=[];seenFx.clear()}
+function showMenu(){disconnectRoom();mode='menu';document.getElementById('menuOverlay').style.display='flex';document.getElementById('menuMain').style.display='flex';document.getElementById('lobbyBox').style.display='none';document.getElementById('customBox').style.display='none';shopOpen=false;modOpen=false;document.getElementById('shopOverlay').classList.remove('open');document.getElementById('modOverlay').classList.remove('open')}
+function hideMenu(){mode='game';document.getElementById('menuOverlay').style.display='none'}
+function showLobby(){mode='lobby';document.getElementById('menuMain').style.display='none';document.getElementById('customBox').style.display='none';document.getElementById('lobbyBox').style.display='block';document.getElementById('lobbyTitle').textContent=isHost?'Create Room':'Join Room';document.getElementById('roomCode').textContent=roomCode;document.getElementById('joinInput').value=isHost?roomCode:'';document.getElementById('joinInput').readOnly=isHost;document.getElementById('startGame').style.display=isHost?'block':'none';document.getElementById('joinGo').style.display=isHost?'none':'block';setMenu(isHost?'Waiting for players…':'Waiting for the host to start…');}
+
+function applyState(s){
+  state=s;started=s.started;
+  if(mode==='lobby'&&started)hideMenu();
+  const me=s.players.find(p=>p.id===localId);if(!me)return;
+  if(!predicted){predicted={...me,input:{...keys}};}
+  const ack=me.ack||0;pendingInputs=pendingInputs.filter(i=>i.seq>ack);
+  const serverPos={x:me.x,y:me.y};predicted={...predicted,...me};
+  predicted.x=serverPos.x;predicted.y=serverPos.y;
+  for(const inp of pendingInputs){simulateInput(predicted,inp.dt,s.obstacles,s.world,inp.input)}
+  for(const p of s.players){let rp=renderPlayers.get(p.id);if(!rp)rp={x:p.x,y:p.y};rp.targetX=p.x;rp.targetY=p.y;rp.p=p;renderPlayers.set(p.id,rp)}
+  for(const [id,rp] of renderPlayers){if(!s.players.some(p=>p.id===id))renderPlayers.delete(id)}
+  for(const ef of s.effects||[]){if(seenFx.has(ef.id))continue;seenFx.add(ef.id);if(seenFx.size>1500){seenFx=new Set([...seenFx].slice(-700))}fx.push({...ef,t:ef.type==='laser'||ef.type==='beam'||ef.type==='slash'||ef.type==='roar'?0.35:0.6});playFxSound(ef.type)}
+  updateHUD(me);updateShop();
+}
+function simulateInput(p,dt,obs,world,input=keys){const mx=(input.right?1:0)-(input.left?1:0);const my=(input.down?1:0)-(input.up?1:0);if(!mx&&!my)return;const len=Math.hypot(mx,my)||1;const dx=mx/len*p.speed*dt,dy=my/len*p.speed*dt;moveLocal(p,dx,dy,obs,WORLDS[world])}
+function moveLocal(p,dx,dy,obs,w){let nx=Math.max(p.r,Math.min(w.w-p.r,p.x+dx));if(!obs.some(o=>o.solid&&circleRect({x:nx,y:p.y,r:p.r},o)))p.x=nx;let ny=Math.max(p.r,Math.min(w.h-p.r,p.y+dy));if(!obs.some(o=>o.solid&&circleRect({x:p.x,y:ny,r:p.r},o)))p.y=ny}
+function circleRect(c,o){const x=Math.max(o.x,Math.min(c.x,o.x+o.w)),y=Math.max(o.y,Math.min(c.y,o.y+o.h));return Math.hypot(c.x-x,c.y-y)<c.r}
+function playerAim(){const w=state?.worldSize||WORLDS.main;const cam=getCamera();const wx=mouse.x+cam.x,wy=mouse.y+cam.y;const dx=wx-(predicted?.x||200),dy=wy-(predicted?.y||700);const l=Math.hypot(dx,dy)||1;return{x:dx/l,y:dy/l}}
+function inputPayload(){return{t:'input',seq,up:!!keys.up,down:!!keys.down,left:!!keys.left,right:!!keys.right,aimX:playerAim().x,aimY:playerAim().y}}
+
+function action(a){if(mode!=='game'||!started||shopOpen||modOpen)return;const aim=playerAim();send({t:'action',action:a,aimX:aim.x,aimY:aim.y})}
+function buy(item){send({t:'buy',item})}
+
+function updateHUD(me){if(!state||!me)return;const allies=state.players.filter(p=>p.id!==localId).map(p=>`<br>👤 ${escapeHtml(p.name)} HP ${Math.ceil(p.hp)}/${Math.ceil(p.maxHp)}`).join('');const st=me.stats||{};const cds=me.cds||{};const abil=[`📢 ${cds.roar>0?cds.roar.toFixed(1)+'s':'READY'}`,'💚 '+(cds.heal>0?cds.heal.toFixed(0)+'s':'HEAL')];if(st.slashUnlocked)abil.push('⚔️ '+(cds.slash>0?cds.slash.toFixed(1)+'s':'READY'));if(st.minionUnlocked)abil.push('👾 '+(cds.minion>0?cds.minion.toFixed(1)+'s':'READY'));if(st.hyperUnlocked)abil.push('⚡ '+(cds.beam>0?cds.beam.toFixed(1)+'s':'READY'));document.getElementById('hudStats').innerHTML=`<b>${state.worldSize.name||WORLDS[state.world].name} · ${isHost?'HOST':'P'+(localSlot+1)}</b><br>HP ${Math.ceil(me.hp)}/${Math.ceil(me.maxHp)} &nbsp; 🛡 ${Math.ceil(me.shield)} &nbsp; 🪙 ${me.coins} &nbsp; ☠ ${me.kills}${allies}<br>${abil.join(' &nbsp; ')}`;document.getElementById('title').textContent=WORLDS[state.world].tag+' '+profile.name}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function updateShop(){if(!state)return;const me=state.players.find(p=>p.id===localId);if(!me)return;document.getElementById('shopSub').textContent=`${WORLDS[state.world].name} · ${me.coins} 🪙 · game keeps running`;const labels={speed:'⚡ Speed +24',power:'📢 Roar Power +18',cd:'⏱ Shorter Roar CD',shield:'🛡 Shield +32',maxhp:'♥️ Max HP +25',range:'📡 Roar Range +',magnet:'🧲 Coin Magnet',armor:'🪨 Armor',key:'🔑 Challenge Key',slashDmg:'⚔️ Slash Damage +',slashCdUp:'⚔️ Faster Slash CD',slashRange:'⚔️ Slash Range +',minionCount:'👾 +1 Minion',minionDmg:'👾 Minion Damage +',minionCdUp:'👾 Faster Minion CD',hyperDmg:'⚡ Hyper Beam Damage +',hyperCdUp:'⚡ Faster Hyper CD'};let order=state.world==='hyper'?['speed','power','cd','shield','maxhp','range','magnet','armor','slashDmg','slashCdUp','slashRange','minionCount','minionDmg','minionCdUp','hyperDmg','hyperCdUp']:state.world==='jake'?['speed','power','cd','shield','maxhp','range','magnet','armor','slashDmg','slashCdUp','slashRange','minionCount','minionDmg','minionCdUp']:state.world==='universe'?['speed','power','cd','shield','maxhp','range','magnet','armor','slashDmg','slashCdUp','slashRange']:['speed','power','cd','shield','maxhp','range','magnet','armor','key'];const box=document.getElementById('shopItems');box.innerHTML='';for(const k of order){if(me.prices[k]==null)continue;if(k==='key'&&(!state.progression.jakeDefeated||state.progression.finalSpawned))continue;const b=document.createElement('button');b.textContent=`${labels[k]} — ${me.prices[k]} 🪙`;b.disabled=me.coins<me.prices[k];b.onclick=()=>buy(k);box.appendChild(b)}}
+function openShop(){if(mode!=='game')return;keys={up:false,down:false,left:false,right:false};send({t:'input',seq,up:false,down:false,left:false,right:false,aimX:playerAim().x,aimY:playerAim().y});shopOpen=true;document.getElementById('shopOverlay').classList.add('open');updateShop()}function closeShop(){shopOpen=false;document.getElementById('shopOverlay').classList.remove('open')}
+function openMods(){if(mode!=='game')return;keys={up:false,down:false,left:false,right:false};send({t:'input',seq,up:false,down:false,left:false,right:false,aimX:playerAim().x,aimY:playerAim().y});modOpen=true;document.getElementById('modOverlay').classList.add('open');refreshMods()};function closeMods(){modOpen=false;document.getElementById('modOverlay').classList.remove('open')}
+function refreshMods(){const sub=document.getElementById('modSub'),unlock=document.getElementById('modUnlock'),items=document.getElementById('modItems');if(!modUnlocked){unlock.style.display='block';items.style.display='none';sub.textContent='Enter code 0912 to unlock mods.';return}unlock.style.display='none';items.style.display='flex';sub.textContent='Mods affect your player. Multiplayer keeps running.';const mods=[['💰 +500 Coins','coins'],['❤️ Full Heal','heal'],['🛡 +500 Shield','shield'],['⚡ Super Speed','speed'],['📢 Max Roar','roar'],['⚔️ Max Slash','slash'],['👾 Unlock Minions','minions'],['⚡ Unlock Hyper Beam','beam'],['💀 Unlock Necro','necro'],['⏱ Reset Cooldowns','cool']];items.innerHTML='';for(const [label,id] of mods){const b=document.createElement('button');b.textContent=label;b.onclick=()=>send({t:'mod',action:id});items.appendChild(b)}}
+
+function getCamera(){const world=state?.worldSize||WORLDS.main;const p=predicted||{x:world.w/2,y:world.h/2};return{x:Math.max(0,Math.min(world.w-VW,p.x-VW/2)),y:Math.max(0,Math.min(world.h-VH,p.y-VH/2))}}
+function worldToScreen(x,y){const cam=getCamera();return{x:x-cam.x,y:y-cam.y}}
+function draw(){const worldKey=state?.world||'main',world=WORLDS[worldKey];ctx.fillStyle=world.bg;ctx.fillRect(0,0,VW,VH);const cam=getCamera();ctx.save();ctx.translate(-cam.x,-cam.y);ctx.strokeStyle=world.grid;ctx.lineWidth=1;for(let x=0;x<=world.w;x+=50){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,world.h);ctx.stroke()}for(let y=0;y<=world.h;y+=50){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(world.w,y);ctx.stroke()}
+  for(const o of state?.obstacles||[]){ctx.fillStyle=o.solid?(o.breakable?'#5b4632':'#253044'):'#161d27';ctx.fillRect(o.x,o.y,o.w,o.h);if(o.breakable&&o.solid){ctx.strokeStyle='#9b7250';ctx.strokeRect(o.x,o.y,o.w,o.h)}}
+  for(const o of state?.orbs||[]){ctx.fillStyle='#f4c542';ctx.beginPath();ctx.arc(o.x,o.y,o.r,0,Math.PI*2);ctx.fill()}
+  for(const m of state?.minions||[]){ctx.fillStyle='#a75cff';ctx.beginPath();ctx.arc(m.x,m.y,m.r,0,Math.PI*2);ctx.fill();ctx.fillStyle='#fff';ctx.font='bold 9px Arial';ctx.textAlign='center';ctx.fillText('M',m.x,m.y+3)}
+  for(const e of state?.enemies||[])drawEnemy(e);for(const b of state?.bosses||[])drawBoss(b);
+  for(const p of state?.players||[]){if(p.id===localId)continue;drawPlayer(renderPlayers.get(p.id)?.x||p.x,renderPlayers.get(p.id)?.y||p.y,p,false)}
+  if(predicted)drawPlayer(predicted.x,predicted.y,predicted,true);
+  drawPortal();
+  drawFx();
+  ctx.restore();
+  if(state?.progression?.hyperWon){ctx.fillStyle='rgba(30,0,50,.42)';ctx.fillRect(0,0,VW,40);ctx.fillStyle='#e0a0ff';ctx.font='bold 15px Arial';ctx.textAlign='center';ctx.fillText('HYPER UNIVERSE CLEARED — OVERLORD OMEGA YAHU defeated!',VW/2,26)}
+}
+function drawPlayer(x,y,p,local){ctx.save();ctx.translate(x,y);ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(0,0,p.r,0,Math.PI*2);ctx.fill();ctx.strokeStyle=local?'#fff':'#2b2b2b';ctx.lineWidth=local?3:2;ctx.stroke();ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(-5,-3,3,0,Math.PI*2);ctx.arc(5,-3,3,0,Math.PI*2);ctx.fill();ctx.fillStyle='#111';ctx.beginPath();ctx.arc(-5,-3,1.4,0,Math.PI*2);ctx.arc(5,-3,1.4,0,Math.PI*2);ctx.fill();ctx.restore();ctx.fillStyle='#fff';ctx.font='bold 11px Arial';ctx.textAlign='center';ctx.fillText(p.name||'Player',x,y-p.r-10);const bar=Math.max(0,p.hp/p.maxHp);ctx.fillStyle='#3c1d1d';ctx.fillRect(x-20,y+p.r+7,40,5);ctx.fillStyle='#4ed36f';ctx.fillRect(x-20,y+p.r+7,40*bar,5)}
+function drawEnemy(e){const col=e.type==='fast'?'#ff6b6b':e.type==='tank'?'#b58c5a':e.type==='ranger'?'#6ab4ff':e.type==='boomer'?'#ff9f40':'#e04d55';ctx.fillStyle=col;ctx.beginPath();ctx.arc(e.x,e.y,e.r,0,Math.PI*2);ctx.fill();}
+function drawBoss(b){let col='#a83232';if(b.type==='jake')col='#c9a227';else if(b.type==='final')col=b.rage?'#a020f0':'#7b39d6';else if(b.type==='stick')col='#8b7355';else if(b.type==='alekunder')col='#2a6a4a';else if(b.type==='faze')col='#c02070';else if(b.type==='bailey')col='#4a90c8';else if(b.type==='vittala')col='#c87820';else if(b.type==='eviljek')col='#8b0000';else if(b.type==='hawking')col='#6a4cff';else if(b.type==='epstein')col='#2a2a3a';else if(b.type==='omega')col=b.rage?'#ff00aa':'#8b00ff';ctx.fillStyle=col;ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.fill();if(b.type==='omega'){ctx.strokeStyle='#ff66cc';ctx.lineWidth=4;ctx.beginPath();ctx.arc(b.x,b.y,b.r+7,0,Math.PI*2);ctx.stroke()}ctx.fillStyle='#fff';ctx.font='bold 11px Arial';ctx.textAlign='center';ctx.fillText(b.name,b.x,b.y-b.r-9);ctx.fillStyle='#431a1a';ctx.fillRect(b.x-b.r,b.y+b.r+7,b.r*2,6);ctx.fillStyle='#63e375';ctx.fillRect(b.x-b.r,b.y+b.r+7,b.r*2*Math.max(0,b.hp/b.maxHp),6)}
+function drawPortal(){const p=state?.portal;if(!p)return;ctx.strokeStyle='#b66dff';ctx.lineWidth=5;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.stroke();ctx.fillStyle='rgba(140,90,255,.2)';ctx.beginPath();ctx.arc(p.x,p.y,p.r-4,0,Math.PI*2);ctx.fill()}
+function drawFx(){for(let i=fx.length-1;i>=0;i--){const f=fx[i];f.t-=.016;if(f.t<=0){fx.splice(i,1);continue}if(f.type==='coin'||f.type==='heal'||f.type==='necro'){ctx.fillStyle=f.type==='coin'?'#f4c542':f.type==='heal'?'#60ff9a':'#d98cff';ctx.beginPath();ctx.arc(f.x,f.y,9+f.t*12,0,Math.PI*2);ctx.fill()}else if(f.type==='slash'){ctx.strokeStyle='#d7f0ff';ctx.lineWidth=9;ctx.beginPath();ctx.arc(f.x,f.y,f.range||95,f.angle-1.1,f.angle+1.1);ctx.stroke()}else if(f.type==='beam'){ctx.strokeStyle='#8df0ff';ctx.lineWidth=20;ctx.globalAlpha=f.t/.35;ctx.beginPath();ctx.moveTo(f.x,f.y);ctx.lineTo(f.x+Math.cos(f.angle)*f.range,f.y+Math.sin(f.angle)*f.range);ctx.stroke();ctx.globalAlpha=1}else if(f.type==='roar'){ctx.strokeStyle='#d98cff';ctx.lineWidth=6;ctx.globalAlpha=f.t/.45;ctx.beginPath();ctx.arc(f.x,f.y,(1-f.t/.45)*(f.r||125),0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1}else if(f.type==='laser'){ctx.strokeStyle='#ff4d74';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(f.x,f.y);ctx.lineTo(f.x+Math.cos(f.angle)*700,f.y+Math.sin(f.angle)*700);ctx.stroke()}else if(f.type==='slam'||f.type==='pulse'||f.type==='boom'){ctx.strokeStyle='#fff';ctx.globalAlpha=f.t;ctx.lineWidth=4;ctx.beginPath();ctx.arc(f.x,f.y,(.7-f.t)*300,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1}}}
+function playFxSound(type){ }
+
+function tick(t){const dt=Math.min(.033,(t-lastFrame)/1000);lastFrame=t;if(mode==='game'&&state){if(!shopOpen&&!modOpen){if(predicted)simulateInput(predicted,dt,state.obstacles,state.world);const now=performance.now();if(now-lastSend>33){seq++;const msg=inputPayload();send(msg);pendingInputs.push({seq,dt:.033,input:{up:!!keys.up,down:!!keys.down,left:!!keys.left,right:!!keys.right}});lastSend=now}}for(const [id,rp] of renderPlayers){if(id===localId)continue;rp.x+=(rp.targetX-rp.x)*Math.min(1,dt*14);rp.y+=(rp.targetY-rp.y)*Math.min(1,dt*14)}}draw();requestAnimationFrame(tick)}
+
+window.addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(mode!=='game')return;if(k==='escape'){closeShop();closeMods();return}if(shopOpen||modOpen)return;const map={w:'up',a:'left',s:'down',d:'right','arrowup':'up','arrowleft':'left','arrowdown':'down','arrowright':'right'};if(map[k])keys[map[k]]=true;if(e.code==='Space'){e.preventDefault();action('roar')}if(k==='e'){e.preventDefault();action('heal')}if(k==='f'){e.preventDefault();action('slash')}if(k==='r'){e.preventDefault();action('minion')}if(k==='q'){e.preventDefault();action('beam')}if(k==='m'){e.preventDefault();openMods()}});
+window.addEventListener('keyup',e=>{const k=e.key.toLowerCase();const map={w:'up',a:'left',s:'down',d:'right','arrowup':'up','arrowleft':'left','arrowdown':'down','arrowright':'right'};if(map[k])keys[map[k]]=false});
+canvas.addEventListener('mousemove',e=>{const r=canvas.getBoundingClientRect();mouse.x=(e.clientX-r.left)*(canvas.width/r.width);mouse.y=(e.clientY-r.top)*(canvas.height/r.height)});
+
+function startSolo(){mode='lobby';connect({t:'create',solo:true,name:profile.name,color:profile.color})}
+function createRoom(){
+  mode='lobby';
+  document.getElementById('menuMain').style.display='none';
+  document.getElementById('lobbyBox').style.display='block';
+  document.getElementById('customBox').style.display='none';
+  document.getElementById('lobbyTitle').textContent='Create Room';
+  document.getElementById('roomCode').textContent='';
+  document.getElementById('joinInput').value='';
+  document.getElementById('joinInput').readOnly=true;
+  document.getElementById('joinGo').style.display='none';
+  document.getElementById('startGame').style.display='none';
+  setMenu('Connecting to multiplayer server…');
+  connect({t:'create',solo:false,name:profile.name,color:profile.color});
+}
+function joinExisting(){const c=document.getElementById('joinInput').value.trim().toUpperCase();if(c.length<4){setMenu('Enter a room code');return}mode='lobby';connect({t:'join',code:c,name:profile.name,color:profile.color})}
+function customize(){document.getElementById('menuMain').style.display='none';document.getElementById('customBox').style.display='block';document.getElementById('nameInput').value=profile.name;document.getElementById('colorInput').value=profile.color;document.getElementById('colorText').textContent=profile.color}
+function saveCustomize(){profile.name=document.getElementById('nameInput').value.trim()||'Charlie';profile.color=document.getElementById('colorInput').value;localStorage.setItem('cm_name',profile.name);localStorage.setItem('cm_color',profile.color);send({t:'profile',name:profile.name,color:profile.color});toast('Customization saved');document.getElementById('customBox').style.display='none';document.getElementById('menuMain').style.display='flex'}
+
+document.getElementById('playSolo').onclick=startSolo;document.getElementById('createRoom').onclick=createRoom;document.getElementById('joinRoom').onclick=()=>{document.getElementById('menuMain').style.display='none';document.getElementById('lobbyBox').style.display='block';document.getElementById('lobbyTitle').textContent='Join Room';document.getElementById('roomCode').textContent='';document.getElementById('joinInput').readOnly=false;document.getElementById('joinInput').value='';document.getElementById('joinGo').style.display='block';document.getElementById('startGame').style.display='none';setMenu('Enter the host room code.')};document.getElementById('joinGo').onclick=joinExisting;document.getElementById('lobbyBack').onclick=showMenu;document.getElementById('startGame').onclick=()=>send({t:'start'});document.getElementById('customize').onclick=customize;document.getElementById('saveCustomize').onclick=saveCustomize;document.getElementById('customBack').onclick=()=>{document.getElementById('customBox').style.display='none';document.getElementById('menuMain').style.display='flex'};document.getElementById('colorInput').oninput=e=>document.getElementById('colorText').textContent=e.target.value;document.getElementById('menuBtn').onclick=showMenu;document.getElementById('restart').onclick=showMenu;document.getElementById('shopBtn').onclick=openShop;document.getElementById('shopClose').onclick=closeShop;document.getElementById('modBtn').onclick=openMods;document.getElementById('modClose').onclick=closeMods;document.getElementById('modSubmit').onclick=()=>{if(document.getElementById('modCode').value.trim()==='0912'){modUnlocked=true;localStorage.setItem('cm_mod','1');toast('Mods unlocked');refreshMods()}else toast('Wrong code')};document.getElementById('deathRestart').onclick=showMenu;
+
+function setupModButton(){document.getElementById('modBtn').style.display=modUnlocked?'inline-block':'none'}
+setupModButton();showMenu();requestAnimationFrame(tick);
+</script>
+</body>
+</html>
